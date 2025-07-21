@@ -1,0 +1,76 @@
+package com.cozentus.pms.repositories;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.cozentus.pms.dto.IdAndCodeDTO;
+import com.cozentus.pms.dto.SkillExperienceDTO;
+import com.cozentus.pms.dto.UserSkillDetailsWithNameDTO;
+import com.cozentus.pms.entites.Skill;
+
+public interface SkillRepository extends JpaRepository<Skill, Integer> {
+	
+	// Custom query to find skills by name
+	List<Skill> findBySkillName(String skillName);
+	
+	// Custom query to find skills by a list of names
+	List<Skill> findBySkillNameIn(Set<String> skillNames);
+	
+	// Custom query to find all distinct skill names
+	@Query("SELECT DISTINCT s.skillName FROM Skill s")
+	List<String> findAllDistinctSkillNames();
+	
+	@Query("SELECT new com.cozentus.pms.dto.IdAndCodeDTO(s.id, s.skillName) FROM Skill s WHERE s.skillName = :skillName")
+	Optional<IdAndCodeDTO> findIdAndNameBySkillsName(String skillName);
+	
+	@Query("SELECT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(s.skillName, u.id, usd.level) " +
+		   "FROM UserSkillDetail usd JOIN usd.skill s JOIN usd.user u WHERE usd.level IS NOT NULL")
+	List<UserSkillDetailsWithNameDTO> findAllSkillsWithNames();
+	
+	
+	@Query("""
+		    SELECT DISTINCT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(
+		        s.skillName, u.id, usd.level
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    JOIN usd.user u
+		    JOIN u.allocations a
+		    WHERE usd.level IS NOT NULL
+		      AND a.project.projectManager.empId = :empId
+		      AND a.allocationCompleted = false
+		""")
+
+		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesForPM(String empId);
+	
+	@Query("""
+		    SELECT new com.cozentus.pms.dto.SkillExperienceDTO(
+		        usd.user.empId, usd.experienceInYears
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    WHERE s.skillName = :skillName
+		      AND usd.level = :level
+		""")
+		List<SkillExperienceDTO> findExperienceBySkillAndLevel(String skillName, String level);
+	
+	@Query("SELECT DISTINCT s.skillName FROM Skill s")
+	List<String> findAllSkills();
+	
+	
+	List<Skill> findAllBySkillNameIn(Set<String> uppercasedNames);
+	
+	@Transactional
+	@Modifying
+	@Query("DELETE FROM UserSkillDetail usd WHERE usd.user.empId = :empId AND usd.skill.skillName = :skillName")
+	void deleteSkillFromUserDetailSkill(String empId, String skillName);
+
+
+
+}
