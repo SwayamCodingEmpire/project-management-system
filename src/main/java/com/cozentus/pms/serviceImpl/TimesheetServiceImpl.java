@@ -132,10 +132,11 @@ public class TimesheetServiceImpl implements TimesheetService {
 		List<DayWiseTimesheet> dayWiseTimesheets = singularTimesheetPayload.dayTimeSheet();
 
 		timeSheets.addAll(existingTimeSheets);
+		log.info("Processing {} day-wise timesheets for resource: {}", dayWiseTimesheets, resourceId);
+		log.info(allocationIdsForResourceAndProjects.toString());
 		for (DayWiseTimesheet dayWiseTimesheet : singularTimesheetPayload.dayTimeSheet()) {
 			String projectCode = dayWiseTimesheet.projectCode();
 			BigDecimal hoursWorked = dayWiseTimesheet.hoursWorked();
-
 			IdAndCodeDTO allocationIdForProject = allocationIdsForResourceAndProjects.stream()
 					.filter(allocation -> allocation.code().equals(projectCode)).findFirst().orElseThrow(
 							() -> new RecordNotFoundException("No allocation found for project code: " + projectCode));

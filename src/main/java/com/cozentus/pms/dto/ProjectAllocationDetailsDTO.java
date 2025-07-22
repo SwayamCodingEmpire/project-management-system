@@ -6,6 +6,7 @@ import java.time.LocalDate;
 public record ProjectAllocationDetailsDTO(
     String projectCode,
     String projectName,
+    Boolean isCustomer,
     LocalDate from,
     LocalDate to,
     String role,

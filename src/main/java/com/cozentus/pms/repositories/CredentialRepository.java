@@ -35,6 +35,7 @@ public interface CredentialRepository extends JpaRepository<Credential, Long> {
 
 
 
+
 	// Define custom query methods if needed
 	// For example:
 	// Optional<Credential> findByUsername(String username);

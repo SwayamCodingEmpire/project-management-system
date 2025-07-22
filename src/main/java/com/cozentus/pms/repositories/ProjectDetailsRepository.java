@@ -122,7 +122,7 @@ public interface ProjectDetailsRepository extends JpaRepository<ProjectDetails, 
 	@Query("" +
 			"SELECT new com.cozentus.pms.dto.ProjectDTO(" +
 			"new com.cozentus.pms.dto.ProjectDetailsDTO(p.projectCode, p.projectName, p.projectDescription, p.startDate, p.endDate,p.currency, p.contractType, p.billingFrequency), " +
-			"new com.cozentus.pms.dto.ProjectTypeDTO(p.isCustomerProject, pt.id), " +
+			"new com.cozentus.pms.dto.ProjectTypeDTO(pt.isCustomerProject, pt.id), " +
 			"new com.cozentus.pms.dto.ClientDTO(c.id, c.name, c.legalEntity, c.businessUnit), "+
 			"pm.empId) " +
 			"FROM ProjectDetails p " +
@@ -177,7 +177,7 @@ public interface ProjectDetailsRepository extends JpaRepository<ProjectDetails, 
 			"WHERE p.enabled = true")
 	int updateDefaultMailConfig(String timesheetSummaryDay, String timesheetWarningDay1, String timesheetWarningDay2, String timesheetReminderDay);
 	
-	@Query("SELECT new com.cozentus.pms.dto.ProjectTypeDropdownDTO(pt.id, pt.projectType, pt.projectCategory) " +
+	@Query("SELECT new com.cozentus.pms.dto.ProjectTypeDropdownDTO(pt.id, pt.projectType, pt.isCustomerProject) " +
 			"FROM ProjectType pt " +
 			"ORDER BY pt.projectType")
 	List<ProjectTypeDropdownDTO> findAllProjectTypes();

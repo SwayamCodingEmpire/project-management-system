@@ -6,6 +6,6 @@ public record ResourceProjectMinimalDashboardDTO(
 		String code,
 			String name,
 			String role,
-			BigDecimal utiliation) {
+			BigDecimal utilization) {
 
 }

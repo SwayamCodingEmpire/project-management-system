@@ -1,6 +1,8 @@
 package com.cozentus.pms.controllers;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cozentus.pms.config.UserAuthDetails;
 import com.cozentus.pms.dto.KeyPerformanceIndicatorsDTO;
+import com.cozentus.pms.dto.ManagerDashboardExportDTO;
 import com.cozentus.pms.dto.ProjectDashboardDTO;
 import com.cozentus.pms.dto.ProjectManagerProjectCountDTO;
 import com.cozentus.pms.dto.ProjectMinimalDataDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
+import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.SkillCountDTO;
 import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.serviceImpl.SkillServiceImpl;
@@ -23,8 +27,11 @@ import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.DMDashboardService;
 import com.cozentus.pms.services.ProjectDetailsService;
 import com.cozentus.pms.services.UserInfoService;
+
+import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/manager-dashboard")
+@Slf4j
 public class ManagerDashboardController {
 	private final DMDashboardService dmDashboardService;
 	private final SkillServiceImpl skillServiceImpl;
@@ -51,16 +58,20 @@ public class ManagerDashboardController {
 	}
 	
 	@GetMapping("/skill-counts")
-	public ResponseEntity<List<SkillCountDTO>> getSkillStats() {
+	public ResponseEntity<List<SkillCountDTO>> getSkillStats(@RequestParam(required = false) String search) {
 		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
 		Roles role = userAuthDetails.getLeft();
 		String empId = userAuthDetails.getRight().empId();
-			return ResponseEntity.ok(skillServiceImpl.getSkillCounts(role, empId));
+		log.info("Fetching skill counts for role: {}, empId: {}, search: {}", role, empId, search);
+		List<SkillCountDTO> sk = skillServiceImpl.getSkillCounts(role, empId, search);
+		log.info("Fetched {} skill counts", sk.size());
+		log.info(sk.toString());
+			return ResponseEntity.ok(sk);
 	}
 	
 	@GetMapping("/skill-resource-details")
-	public ResponseEntity<List<ResourceBasicDTO>> getSkillResourceDetails(@RequestParam String skillName, @RequestParam String level) {	
-		return ResponseEntity.ok(userInfoService.getAllResourcesAccordingToSkillsAndLevels(skillName, level));
+	public ResponseEntity<List<ResourceBasicDTO>> getSkillResourceDetails(@RequestParam String skillName, @RequestParam String level, @RequestParam(required = false) String search) {	
+		return ResponseEntity.ok(userInfoService.getAllResourcesAccordingToSkillsAndLevels(skillName, level, search));
 	}
 	
 	@GetMapping("/projects")
@@ -83,4 +94,46 @@ public class ManagerDashboardController {
 		String dmEmpId = authenticationService.getCurrentUserDetails().getRight().empId();
 		return ResponseEntity.ok(projectDetailsService.getProjectsUnderManager(projectManagerEmpId, dmEmpId));
 	}
+	
+	@GetMapping("/export-all")
+	public ResponseEntity<ManagerDashboardExportDTO> exportCompleteDashboard(
+	        @RequestParam(required = false) String skillName,
+	        @RequestParam(required = false) String level
+	) {
+	    Pair<Roles, UserAuthDetails> userDetails = authenticationService.getCurrentUserDetails();
+	    Roles role = userDetails.getLeft();
+	    String empId = userDetails.getRight().empId();
+	    Integer userId = userDetails.getRight().userId();
+
+	    // Fetch each piece of data
+	    KeyPerformanceIndicatorsDTO kpi = KeyPerformanceIndicatorsDTO.from(
+	        dmDashboardService.getResourceBillabilityStats(),
+	        dmDashboardService.computeUtilizationBreakdown()
+	    );
+
+	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, empId, null);
+
+	    List<ResourceBasics> skillResourceDetails = userInfoService.getAllResourceSkillLevel();
+
+
+	    List<ProjectDashboardDTO> projectDetails = projectDetailsService.getDashboardData(userId, role);
+
+	    List<ProjectManagerProjectCountDTO> projectCount = projectDetailsService.getProjectManagersUnderManager(empId);
+
+	    // Collect projects under all PMs
+	    Map<String, List<ProjectMinimalDataDTO>> projectsByPm = new HashMap<>();
+	    for (ProjectManagerProjectCountDTO pm : projectCount) {
+	        String pmEmpId = pm.getEmpId();
+	        List<ProjectMinimalDataDTO> pmProjects = projectDetailsService.getProjectsUnderManager(pmEmpId, empId);
+	        projectsByPm.put(pmEmpId, pmProjects);
+	    }
+
+	    ManagerDashboardExportDTO exportDTO = new ManagerDashboardExportDTO(
+	        kpi, skillCounts, skillResourceDetails, projectDetails, projectCount, projectsByPm
+	    );
+
+	    return ResponseEntity.ok(exportDTO);
+	}
+	
+	
 }

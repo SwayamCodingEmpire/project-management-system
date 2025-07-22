@@ -66,7 +66,6 @@ public class ProjectDetails {
     @Column(name = "timesheet_warning_day_2")
     private String timesheetWarningDay2;
     private LocalDate actualEndDate;
-    private boolean isCustomerProject;
     
     @ManyToOne
     @JoinColumn(name = "projectTypeId", nullable = true)
@@ -84,6 +83,7 @@ public class ProjectDetails {
     @JoinColumn(name = "customer_id")
     private Client customer;
 
+    
     @OneToMany(mappedBy = "project")
     private List<ResourceAllocation> allocations;
     
@@ -96,7 +96,6 @@ public class ProjectDetails {
 		this.currency = projectDetailsDTO.currency();
 		this.contractType = projectDetailsDTO.contractType();
 		this.billingFrequency = projectDetailsDTO.billingFrequency();
-		this.isCustomerProject = projectTypeDTO.customerProject();
 		this.status = "INITIALIZED";
     }
 
@@ -109,7 +108,6 @@ public class ProjectDetails {
 		this.currency = projectDetailsDTO.currency();
 		this.contractType = projectDetailsDTO.contractType();
 		this.billingFrequency = projectDetailsDTO.billingFrequency();
-		this.isCustomerProject = projectTypeDTO.customerProject();
 		this.status = "INITIALIZED";
 		
 	}

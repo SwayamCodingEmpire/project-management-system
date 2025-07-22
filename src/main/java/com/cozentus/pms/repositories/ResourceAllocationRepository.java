@@ -34,6 +34,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
 			            p.projectCode,
 			            p.projectName,
+			            pt.isCustomerProject,
 			            a.allocationStartDate,
 			            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
 			            a.role,
@@ -49,17 +50,17 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			    LEFT JOIN a.project p
 			    ON p.id <> 1
 			    LEFT JOIN a.timeSheets ts ON ts.enabled = true
+			    LEFT JOIN p.projectType pt
 			    WHERE u.enabled = true
 			        AND u.credential.role = :role
 			        AND u.credential.enabled = true
-			        AND a.allocationCompleted = false
 			        
 
 			    GROUP BY
 			        u.empId, u.name, u.designation, u.expInYears,
 			        u.dailyWorkingHours,
 			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
-			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours
+			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
 			""")
 	List<ResourceAllocationsFlatDTO> findAllResourceAllocationsFlat(Roles role);
 
@@ -73,6 +74,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
 			            p.projectCode,
 			            p.projectName,
+			            pt.isCustomerProject,
 			            a.allocationStartDate,
 			            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
 			            a.role,
@@ -88,19 +90,19 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			    LEFT JOIN a.project p
 			    ON p.id <> 1
 			    LEFT JOIN a.timeSheets ts ON ts.enabled = true
+			    LEFT JOIN p.projectType pt
 			    WHERE u.enabled = true
 			        AND u.credential.role = :role
 			        AND u.credential.enabled = true
 				    AND (:empIds IS NULL OR u.empId IN :empIds)
 				    AND (:designations IS NULL OR u.designation IN :designations)
 				    AND (:experience IS NULL OR u.expInYears >= :experience)
-				    AND a.allocationCompleted = false 
 				    
 			   GROUP BY
 			        u.empId, u.name, u.designation, u.expInYears,
 			        u.dailyWorkingHours,
 			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
-			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours
+			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
 			        ORDER BY u.expInYears, u.designation ASC
 			""")
 	List<ResourceAllocationsFlatDTO> searchResourceAllocations(Roles role, List<String> empIds,
@@ -192,7 +194,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    SELECT new com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO(
 		        u.empId,
 		        p.projectCode,
-		        p.isCustomerProject,
+		        pt.isCustomerProject,
 		        SUM(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.hours ELSE 0 END),
 		        COUNT(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.id ELSE null END),
 		        a.billabilityPercent,
@@ -202,12 +204,13 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    FROM UserInfo u
 		    LEFT JOIN u.allocations a ON a.enabled = true
 		    LEFT JOIN a.project p
+		    LEFT JOIN p.projectType pt
 		    LEFT JOIN a.timeSheets ts
 		    WHERE u.enabled = true
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
 		      AND p.projectManager.empId = :empId
-		    GROUP BY u.empId, p.projectCode, p.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
+		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
 		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForPm(Roles role, String empId);
 	
@@ -216,7 +219,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    SELECT new com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO(
 		        u.empId,
 		        p.projectCode,
-		        p.isCustomerProject,
+		        pt.isCustomerProject,
 		        SUM(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.hours ELSE 0 END),
 		        COUNT(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.id ELSE null END),
 		        a.billabilityPercent,
@@ -226,11 +229,12 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    FROM UserInfo u
 		    LEFT JOIN u.allocations a ON a.enabled = true
 		    LEFT JOIN a.project p
+		    LEFT JOIN p.projectType pt
 		    LEFT JOIN a.timeSheets ts
 		    WHERE u.enabled = true
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
-		    GROUP BY u.empId, p.projectCode, p.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
+		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
 		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForDM(Roles role);
 	
@@ -238,7 +242,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    SELECT new com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO(
 		        u.empId,
 		        p.projectCode,
-		        p.isCustomerProject,
+		        pt.isCustomerProject,
 		        SUM(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.hours ELSE 0 END),
 		        COUNT(CASE WHEN ts.enabled = true AND ts.approval = true THEN ts.id ELSE null END),
 		        a.billabilityPercent,
@@ -248,12 +252,13 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    FROM UserInfo u
 		    LEFT JOIN u.allocations a ON a.enabled = true
 		    LEFT JOIN a.project p
+		    LEFT JOIN p.projectType pt
 		    LEFT JOIN a.timeSheets ts
 		    WHERE u.enabled = true
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
 		      AND p.projectManager.empId = :empId
-		    GROUP BY u.empId, p.projectCode, p.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
+		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
 		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForPM(Roles role, String empId);
 	
@@ -305,19 +310,20 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    SELECT 
 		        new com.cozentus.pms.dto.UtilizationPairDTO(
 		            ts.date,
-		            COALESCE(a.plannedHours / NULLIF(u.dailyWorkingHours, 0), 0) * 100,
+		            COALESCE(SUM(a.plannedHours) / NULLIF(u.dailyWorkingHours, 0), 0) * 100,
 		            COALESCE(SUM(CASE WHEN ts.enabled = true THEN ts.hours ELSE 0 END) / NULLIF(u.dailyWorkingHours, 0), 0) * 100
 		        )
 		    FROM UserInfo u
 		    JOIN u.allocations a ON a.enabled = true
 		    LEFT JOIN a.timeSheets ts ON ts.enabled = true AND ts.date BETWEEN :startDate AND :endDate
-		    WHERE u.empId = :empId AND u.enabled = true AND u.credential.enabled = true
-		    GROUP BY ts.date, a.plannedHours, u.dailyWorkingHours
+		    WHERE u.empId = :empId AND u.enabled = true AND u.credential.enabled = true AND a.project.id <> 1
+		    GROUP BY ts.date, u.dailyWorkingHours
 		    ORDER BY ts.date
-		""")
-		List<UtilizationPairDTO> fetchDailyUtilization(@Param("empId") String empId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-	
-	
+		    """)
+		List<UtilizationPairDTO> fetchDailyUtilization(@Param("empId") String empId,
+		                                                @Param("startDate") LocalDate startDate,
+		                                                @Param("endDate") LocalDate endDate);
+
 	@Transactional
 	@Modifying
 	@Query("UPDATE ResourceAllocation ra "

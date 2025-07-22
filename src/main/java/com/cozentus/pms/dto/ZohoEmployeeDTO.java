@@ -47,5 +47,7 @@ public record ZohoEmployeeDTO(
     @JsonProperty("Level2")
     String secondarySkillLevel,
     @JsonProperty("Organization_Role")
-    String organizationRole
+    String organizationRole,
+    @JsonProperty("Reporting_To.MailID")
+    String reportingManagerEmailId
 ) {}

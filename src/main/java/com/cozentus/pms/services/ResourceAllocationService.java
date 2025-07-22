@@ -17,9 +17,9 @@ import com.cozentus.pms.dto.UserSkillDetailsDTO;
 import com.cozentus.pms.dto.UtilizationPairDTO;
 
 public interface ResourceAllocationService {
-	Page<ResourceAllocationsDTO> getAllResourceAllocations(Pageable pageable);
+	List<ResourceAllocationsDTO> getAllResourceAllocations();
 	void allocateResources(ProjectResourceAllocationDTO projectResourceAllocationDTO);
-	 Page<ResourceAllocationsDTO> searchAmongResources(Pageable pageable, ResourceFilterDTO resourceFilterDTO);
+	List<ResourceAllocationsDTO> searchAmongResources(ResourceFilterDTO resourceFilterDTO);
 	 List<ResourceAllocationsDTO> toResourceAllocationsDTO(List<ResourceAllocationsFlatDTO> resourceAllocationsFlatDTO,  Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId);
 	 ProjectAllocationViewDTO getProjectAllocationsViewDTO(String projectCode, Pageable pageable);
 	 ResourceWeeklySummaryDTO getResourceProjectCountAndWeeklyHours();

@@ -35,7 +35,7 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Integer> {
 		   "FROM ResourceAllocation r " +
 		   "LEFT JOIN r.timeSheets ts " +
 		   "LEFT JOIN r.project p " +
-		   "WHERE r.resource.empId = :empId AND "
+		   "WHERE r.resource.empId = :empId AND p.id <> 1 AND  "
 		   + "(:projectCode IS NULL OR :projectCode = '' OR p.projectCode = :projectCode) ")
 	List<TimesheetFlatDTO> findAllTimesheetByEmpIdAndDateBetween(String empId, LocalDate startDate, LocalDate endDate, String projectCode);
 	

@@ -16,28 +16,34 @@ import com.cozentus.pms.dto.SingularTimesheetPayload;
 import com.cozentus.pms.dto.TimesheetApprovalDTO;
 import com.cozentus.pms.dto.TimesheetDTO;
 import com.cozentus.pms.dto.TimesheetSummaryDTO;
+import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.TimesheetService;
 @RestController
 @RequestMapping("/timesheet")
 public class TimesheetController {
 	private final TimesheetService timesheetService;
+	private final AuthenticationService authenticationService;
 	
-	public TimesheetController(TimesheetService timesheetService) {
+	public TimesheetController(TimesheetService timesheetService, AuthenticationService authenticationService) {
 		this.timesheetService = timesheetService;
+		this.authenticationService = authenticationService;
 	}
 	
 	@GetMapping
 	public ResponseEntity<List<TimesheetDTO>> getTimesheetByEmpId(@RequestParam
 			LocalDate startDate, 
 			@RequestParam
+			
 			LocalDate endDate) {
-		List<TimesheetDTO> timesheetDTOs = timesheetService.getTimeSheetByEmpId("CZ0294", startDate, endDate);
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+		List<TimesheetDTO> timesheetDTOs = timesheetService.getTimeSheetByEmpId(empId, startDate, endDate);
 		return ResponseEntity.ok(timesheetDTOs);
 	}
 	
 	@PostMapping
 	public ResponseEntity<String> createTimesheet(@RequestBody SingularTimesheetPayload singularTimesheetPayload) {
-		timesheetService.saveTimesheet(singularTimesheetPayload, "CZ0294");
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+		timesheetService.saveTimesheet(singularTimesheetPayload, empId);
 		return ResponseEntity.ok("Timesheet created successfully");
 	}
 	
@@ -52,7 +58,8 @@ public class TimesheetController {
 			LocalDate startDate, 
 			@RequestParam
 			LocalDate endDate) {
-		List<TimesheetSummaryDTO> timesheetSummary = timesheetService.getTimeSheetSummaryByManagerId("CZ0462", startDate, endDate);
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+		List<TimesheetSummaryDTO> timesheetSummary = timesheetService.getTimeSheetSummaryByManagerId(empId, startDate, endDate);
 		return ResponseEntity.ok(timesheetSummary);
 	}
 	
@@ -62,14 +69,16 @@ public class TimesheetController {
 			@RequestParam LocalDate startDate,
 			@RequestParam LocalDate endDate,
 			@PathVariable String projectCode) {
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
 		TimesheetDTO timesheetDTO = timesheetService.getTimeSheetByManagerIdAndresourceIdAndProjectCode(
-				resourceId, startDate, endDate, projectCode, "CZ0462");
+				resourceId, startDate, endDate, projectCode, empId);
 		return ResponseEntity.ok(timesheetDTO);
 	}
 	
 	@PostMapping("/submit")
 	public ResponseEntity<String> submitTimesheet(@RequestBody List<TimesheetDTO> timesheetDTOs) {
-		timesheetService.submitTimesheet(timesheetDTOs, "CZ0294");
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+		timesheetService.submitTimesheet(timesheetDTOs, empId);
 		return ResponseEntity.ok("Timesheet submitted successfully");
 	}
 	

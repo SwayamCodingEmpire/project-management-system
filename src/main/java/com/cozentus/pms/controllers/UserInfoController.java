@@ -99,7 +99,4 @@ public class UserInfoController {
 		skillServiceImpl.createNewSkill(skillName);
 		return ResponseEntity.ok("Skill created successfully");
 	}
-	
-	// 
-	
 }

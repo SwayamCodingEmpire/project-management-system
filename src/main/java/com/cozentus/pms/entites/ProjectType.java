@@ -30,8 +30,8 @@ public class ProjectType {
     @Column(length = 400, nullable = false)
     private String projectType;
 
-    @Column(length = 200, nullable = false)
-    private String projectCategory;
+    @Column(name = "is_customer_project", nullable = false)
+    private boolean isCustomerProject;
 
     @OneToMany(mappedBy = "projectType", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectDetails> projectDetails;

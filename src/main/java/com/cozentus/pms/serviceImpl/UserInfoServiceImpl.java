@@ -15,6 +15,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +25,16 @@ import com.cozentus.pms.dto.ProjectManagerDTO;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
 import com.cozentus.pms.dto.ReportingManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
+import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceDTO;
 import com.cozentus.pms.dto.ResourceEditDTO;
 import com.cozentus.pms.dto.ResourceFlatDTO;
 import com.cozentus.pms.dto.SkillDTO;
 import com.cozentus.pms.dto.SkillExperienceDTO;
 import com.cozentus.pms.dto.SkillUpsertDTO;
+import com.cozentus.pms.dto.UserSkillDTO;
 import com.cozentus.pms.dto.UserSkillDetailsDTO;
+import com.cozentus.pms.entites.Credential;
 import com.cozentus.pms.entites.Skill;
 import com.cozentus.pms.entites.UserInfo;
 import com.cozentus.pms.entites.UserSkillDetail;
@@ -40,6 +44,7 @@ import com.cozentus.pms.helpers.SkillPriority;
 import com.cozentus.pms.repositories.SkillRepository;
 import com.cozentus.pms.repositories.UserInfoRepository;
 import com.cozentus.pms.repositories.UserSkillDetailRepository;
+import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.GptSkillNormalizerService;
 import com.cozentus.pms.services.UserInfoService;
 
@@ -56,13 +61,17 @@ public class UserInfoServiceImpl implements UserInfoService {
 	private final SkillRepository skillRepository;
 	private final UserSkillDetailRepository userSkillDetailRepository;
 	private final GptSkillNormalizerService gptSkillNormalizerService;
+	private final AuthenticationService authenticationService;
+	private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	public UserInfoServiceImpl(UserInfoRepository userInfoRepository, SkillRepository skillRepository, 
-			UserSkillDetailRepository userSkillDetailRepository, GptSkillNormalizerService gptSkillNormalizerService) {
+			UserSkillDetailRepository userSkillDetailRepository, GptSkillNormalizerService gptSkillNormalizerService, AuthenticationService authenticationService, BCryptPasswordEncoder bCryptPasswordEncoder) {
 		this.userInfoRepository = userInfoRepository;
 		this.skillRepository = skillRepository;
 		this.userSkillDetailRepository = userSkillDetailRepository;
 		this.gptSkillNormalizerService= gptSkillNormalizerService;
+		this.authenticationService = authenticationService;
+		this.bCryptPasswordEncoder = bCryptPasswordEncoder;
 	}
 //	@Override
 //	@Cacheable(value = "projectManagers", key = "'allProjectManagersWithProjects'")
@@ -126,7 +135,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	}
 
 	@Override
-	@Cacheable(value = "resources", key = "#search + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+//	@Cacheable(value = "resources", key = "#search + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
 	public Page<ResourceDTO> getAllResourcesWithAllocations(String search, Pageable pageable) {
 	    // Get ALL matching records without pagination first
 	    List<ResourceFlatDTO> resourceFlatDTOLists = userInfoRepository.findAllResourcesWithAllocations(search, Roles.RESOURCE);
@@ -188,6 +197,11 @@ public class UserInfoServiceImpl implements UserInfoService {
 						"Reporting Manager not found with empId: " + resourceDTO.reportingManagerId()));
 		UserInfo reportingManager = entityManager.getReference(UserInfo.class, managerId);
 		userInfo.setReportingManager(reportingManager);
+		Credential credential = new Credential();
+		credential.setUsername(resourceDTO.emailId());
+		credential.setPassword(bCryptPasswordEncoder.encode("C0Z1234")); // Set a default password or handle it as needed
+		credential.setRole(Roles.RESOURCE);
+		credential.setEnabled(true);
 		userInfoRepository.save(userInfo);
 	}
 
@@ -236,15 +250,33 @@ public class UserInfoServiceImpl implements UserInfoService {
 	}
 	
 	
-	public List<ResourceBasicDTO> getAllResourcesAccordingToSkillsAndLevels(String skillName, String level) {
+	public List<ResourceBasicDTO> getAllResourcesAccordingToSkillsAndLevels(String skillName, String level, String search) {
 		Roles role = Roles.DELIVERY_MANAGER;
-		List<ResourceBasicDTO> resourceList;
-		if (role.equals(Roles.DELIVERY_MANAGER)) {	
-	    resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level);
+		log.info("Fetching resources with skill: {}, level: {}, search: {}", skillName, level, search);
+		List<ResourceBasicDTO> resourceList = new ArrayList<>();
+		if (role.equals(Roles.DELIVERY_MANAGER)) {
+			if (search != null && !search.isBlank()) {
+				List<String> empIds = gptSkillNormalizerService
+						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsByEmpId(skillName, level, empIds);
+			}
+			else {
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level);
+				
+			}
+	    
 		}
 		else {
-			String empId = "CZ0462";
-			 resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsforPM(skillName, level, empId);
+			String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+			if (search != null && !search.isBlank()) {
+				List<String> empIds = gptSkillNormalizerService
+						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsforPMByEmpIdIn(skillName, level, empId, empIds);
+			}
+			else {
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsforPM(skillName, level, empId);
+				
+			}
 		}
 		
 	    if (resourceList.isEmpty()) {
@@ -327,6 +359,11 @@ public class UserInfoServiceImpl implements UserInfoService {
 		skillRepository.deleteSkillFromUserDetailSkill(empId, skillName);
 		gptSkillNormalizerService.populateQuadrantVectorDBForSingleUser(empId);
 		
+	}
+	
+	@Override
+	public List<ResourceBasics> getAllResourceSkillLevel() {
+	    return userInfoRepository.findAllResourceSkillLevel();
 	}
 
 }

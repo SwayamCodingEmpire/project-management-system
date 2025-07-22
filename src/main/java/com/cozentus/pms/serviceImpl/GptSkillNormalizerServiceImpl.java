@@ -3,12 +3,10 @@ package com.cozentus.pms.serviceImpl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.dto.UserSingleSkillDTO;
@@ -18,9 +16,8 @@ import com.cozentus.pms.services.EmbeddingService;
 import com.cozentus.pms.services.GptSkillNormalizerService;
 
 import lombok.extern.slf4j.Slf4j;
-
-@Service
 @Slf4j
+@Service
 public class GptSkillNormalizerServiceImpl implements GptSkillNormalizerService {
 	private final EmbeddingService embeddingService;
 	private final ChatClient chatClient;
@@ -193,7 +190,7 @@ public class GptSkillNormalizerServiceImpl implements GptSkillNormalizerService 
 
 	}
 
-	@Async
+	
 	public void populateQuadrantVectorDBForSingleUser(String empId) {
 		List<UserSingleSkillDTO> flatList = userInfoRepository.fetchFlatUserSkillsByEmpID(empId);
 
@@ -205,6 +202,21 @@ public class GptSkillNormalizerServiceImpl implements GptSkillNormalizerService 
 		log.info(userSkillDTOs.toString());
 
 		normalizeSkillSingleOnly(userSkillDTOs);
+//		embeddingService.createSkillEmbeddings(userSkillDTOs);
+
+	}
+	
+	public void populateQuadrantVectorDBForMultiUser(List<String> empId) {
+		List<UserSingleSkillDTO> flatList = userInfoRepository.fetchFlatUserSkillsByEmpIDIn(empId);
+
+		List<UserSkillDTO> userSkillDTOs = flatList.stream()
+				.collect(Collectors.groupingBy(UserSingleSkillDTO::empId,
+						Collectors.mapping(UserSingleSkillDTO::skillName, Collectors.toList())))
+				.entrySet().stream().map(entry -> new UserSkillDTO(entry.getKey(), entry.getValue())).toList();
+
+		log.info(userSkillDTOs.toString());
+
+		normalizeSkillBulk(userSkillDTOs);
 //		embeddingService.createSkillEmbeddings(userSkillDTOs);
 
 	}

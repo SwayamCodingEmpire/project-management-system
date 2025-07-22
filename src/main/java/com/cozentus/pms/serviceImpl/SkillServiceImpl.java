@@ -7,50 +7,86 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.dto.LevelCount;
 import com.cozentus.pms.dto.SkillCountDTO;
+import com.cozentus.pms.dto.UserSkillDTO;
 import com.cozentus.pms.dto.UserSkillDetailsWithNameDTO;
 import com.cozentus.pms.entites.Skill;
 import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.repositories.SkillRepository;
+import com.cozentus.pms.services.GptSkillNormalizerService;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class SkillServiceImpl {
 	private final SkillRepository skillRepository;
+	private final GptSkillNormalizerService gptSkillNormalizerService;
 	
-	public SkillServiceImpl(SkillRepository skillRepository) {
+	public SkillServiceImpl(SkillRepository skillRepository, GptSkillNormalizerService gptSkillNormalizerService) {
 		this.skillRepository = skillRepository;
+		this.gptSkillNormalizerService = gptSkillNormalizerService;
 	}
 	
 	
-	public List<SkillCountDTO> getSkillCounts(Roles role, String empId) {
-		List<UserSkillDetailsWithNameDTO> userSkillDetailsWithNameDTOs;
-		if (role.equals(Roles.DELIVERY_MANAGER)) {
-			userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames();
-		}
-		else {
-			String managerEmpId = empId; 
-			userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesForPM(managerEmpId); // Replace "empId" with actual employee ID
-		}
-	    
-	    
-	    Map<String, Set<Integer>> totalUsersBySkill = new HashMap<>();
-	    Map<String, Map<String, Set<Integer>>> levelWiseUsersBySkill = new HashMap<>();
+	public List<SkillCountDTO> getSkillCounts(Roles role, String empId, String search) {
+	    List<UserSkillDetailsWithNameDTO> userSkillDetailsWithNameDTOs;
+	    final Map<String, Integer> empIdOrderMap;
+	    Map<String, String> skillToFirstEmpId = new HashMap<>();
+
+	    if (role.equals(Roles.DELIVERY_MANAGER)) {
+	        boolean isSearchEmpty = search == null || search.isBlank();
+	        if (isSearchEmpty) {
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames();
+	            empIdOrderMap = null;
+	        } else {
+	            log.info("Searching for skills with search term: {}", search);
+	            List<String> empIds = gptSkillNormalizerService
+	                .normalizeSkillSingle(new UserSkillDTO(empId, List.of(search)), 20);
+	            log.info("Normalized employee IDs: {}", empIds);
+
+	            empIdOrderMap = IntStream.range(0, empIds.size())
+	                .boxed()
+	                .collect(Collectors.toMap(empIds::get, i -> i));
+
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesWithCertainEmpIds(empIds);
+	        }
+	    } else {
+	        boolean isSearchEmpty = search == null || search.isBlank();
+	        if (isSearchEmpty) {
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesForPM(empId);
+	            empIdOrderMap = null;
+	        } else {
+	            List<String> empIds = gptSkillNormalizerService
+	                .normalizeSkillSingle(new UserSkillDTO(empId, List.of(search)), 200);
+
+	            empIdOrderMap = IntStream.range(0, empIds.size())
+	                .boxed()
+	                .collect(Collectors.toMap(empIds::get, i -> i));
+
+	            userSkillDetailsWithNameDTOs = skillRepository
+	                .findAllSkillsWithNamesForPMForCertainEmpIds(empId, empIds);
+	        }
+	    }
+
+	    Map<String, Set<String>> totalUsersBySkill = new HashMap<>();
+	    Map<String, Map<String, Set<String>>> levelWiseUsersBySkill = new HashMap<>();
 
 	    for (UserSkillDetailsWithNameDTO entry : userSkillDetailsWithNameDTOs) {
 	        String skill = entry.skillName();
 	        String level = entry.level() != null ? entry.level() : "";
-	        Integer userId = entry.userId();
+	        String userId = entry.userId(); // which is empId in your DTO
 
-	        // Total unique users per skill
-	        totalUsersBySkill
-	            .computeIfAbsent(skill, k -> new HashSet<>())
-	            .add(userId);
+	        skillToFirstEmpId.putIfAbsent(skill, userId);
 
-	        // Level-based unique users per skill
+	        totalUsersBySkill.computeIfAbsent(skill, k -> new HashSet<>()).add(userId);
+
 	        if (!level.isBlank()) {
 	            levelWiseUsersBySkill
 	                .computeIfAbsent(skill, k -> new HashMap<>())
@@ -59,23 +95,33 @@ public class SkillServiceImpl {
 	        }
 	    }
 
-	    List<SkillCountDTO> skillCounts = new ArrayList<>();
+	    List<SkillCountDTO> skillCounts = totalUsersBySkill.entrySet().stream()
+	        .map(skillEntry -> {
+	            String skillName = skillEntry.getKey();
+	            int totalCount = skillEntry.getValue().size();
 
-	    for (Map.Entry<String, Set<Integer>> skillEntry : totalUsersBySkill.entrySet()) {
-	        String skillName = skillEntry.getKey();
-	        int totalCount = skillEntry.getValue().size();
+	            Map<String, Set<String>> levelMap = levelWiseUsersBySkill.getOrDefault(skillName, Map.of());
+	            List<LevelCount> levels = levelMap.entrySet().stream()
+	                .map(e -> new LevelCount(e.getKey(), e.getValue().size()))
+	                .sorted(Comparator.comparing(LevelCount::level))
+	                .toList();
 
-	        Map<String, Set<Integer>> levelMap = levelWiseUsersBySkill.getOrDefault(skillName, Map.of());
-	        List<LevelCount> levels = levelMap.entrySet().stream()
-	            .map(e -> new LevelCount(e.getKey(), e.getValue().size()))
-	            .sorted(Comparator.comparing(LevelCount::level)) // optional: sort by level name
-	            .toList();
+	            return new SkillCountDTO(skillName, totalCount, levels);
+	        })
+	        .collect(Collectors.toList());
 
-	        skillCounts.add(new SkillCountDTO(skillName, totalCount, levels));
+	    // Sort by order of first contributing empId, if applicable
+	    if (empIdOrderMap != null) {
+	        skillCounts.sort(Comparator.comparingInt(dto -> {
+	            String firstEmpId = skillToFirstEmpId.get(dto.name());
+	            return empIdOrderMap.getOrDefault(firstEmpId, Integer.MAX_VALUE);
+	        }));
 	    }
 
 	    return skillCounts;
 	}
+
+
 
 
 	public void createNewSkill(String skillName) {
@@ -83,6 +129,12 @@ public class SkillServiceImpl {
 		skill.setSkillName(skillName);
 		skillRepository.save(skill);
 		
+	}
+
+
+	public List<SkillCountDTO> getSkillCountsBySearch(Roles role, String empId, String search) {
+
+		return List.of(); // Placeholder for actual implementation	
 	}
 	
 }

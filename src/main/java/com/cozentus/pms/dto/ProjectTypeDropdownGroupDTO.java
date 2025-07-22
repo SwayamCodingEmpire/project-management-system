@@ -3,7 +3,7 @@ package com.cozentus.pms.dto;
 import java.util.List;
 
 public record ProjectTypeDropdownGroupDTO(
-	    String label,
+	    Boolean isCustomerType,
 	    List<ProjectTypeOptionsDTO> options
 	) {}
 

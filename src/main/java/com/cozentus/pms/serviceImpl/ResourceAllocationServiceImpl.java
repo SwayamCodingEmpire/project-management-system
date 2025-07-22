@@ -82,38 +82,23 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 	}
 
 	@Override
-	public Page<ResourceAllocationsDTO> getAllResourceAllocations(Pageable pageable) {
-		List<ResourceAllocationsFlatDTO> resourceAllocationFlatDTO = resourceAllocationRepository
-				.findAllResourceAllocationsFlat(Roles.RESOURCE);
-		List<UserSkillDetailsDTO> userSingleSkillDTOs = userInfoRepository.fetchFlatUserSkillsByEmpIdIn(
-				resourceAllocationFlatDTO.stream().map(ResourceAllocationsFlatDTO::id).distinct().toList());
-		Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId = userSingleSkillDTOs.stream()
-				.collect(Collectors.groupingBy(UserSkillDetailsDTO::empId));
+	public List<ResourceAllocationsDTO> getAllResourceAllocations() {
+	    List<ResourceAllocationsFlatDTO> resourceAllocationFlatDTO = resourceAllocationRepository
+	            .findAllResourceAllocationsFlat(Roles.RESOURCE);
+	    List<UserSkillDetailsDTO> userSingleSkillDTOs = userInfoRepository.fetchFlatUserSkillsByEmpIdIn(
+	            resourceAllocationFlatDTO.stream().map(ResourceAllocationsFlatDTO::id).distinct().toList());
+	    Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId = userSingleSkillDTOs.stream()
+	            .collect(Collectors.groupingBy(UserSkillDetailsDTO::empId));
 
-		if (resourceAllocationFlatDTO.isEmpty()) {
-			throw new RecordNotFoundException("No resource allocations found");
-		}
+	    if (resourceAllocationFlatDTO.isEmpty()) {
+	        throw new RecordNotFoundException("No resource allocations found");
+	    }
 
-		// Group and convert to DTOs (custom logic here)
-		List<ResourceAllocationsDTO> resourceAlocationgroupedListDTO = toResourceAllocationsDTO(
-				resourceAllocationFlatDTO, skillMapByEmpId);
-
-		int pageSize = pageable.getPageSize();
-		int currentPage = pageable.getPageNumber();
-		int startItem = currentPage * pageSize;
-
-		List<ResourceAllocationsDTO> resourceAllocationspaginatedListDTO;
-
-		if (startItem >= resourceAlocationgroupedListDTO.size()) {
-			resourceAllocationspaginatedListDTO = Collections.emptyList();
-		} else {
-			int toIndex = Math.min(startItem + pageSize, resourceAlocationgroupedListDTO.size());
-			resourceAllocationspaginatedListDTO = resourceAlocationgroupedListDTO.subList(startItem, toIndex);
-		}
-
-		return new PageImpl<>(resourceAllocationspaginatedListDTO, pageable, resourceAlocationgroupedListDTO.size());
+	    // Group and convert to DTOs (custom logic here)
+	    return toResourceAllocationsDTO(resourceAllocationFlatDTO, skillMapByEmpId);
 	}
-
+	
+	
 	public List<ResourceAllocationsDTO> toResourceAllocationsDTO(
 			List<ResourceAllocationsFlatDTO> resourceAllocationsFlatDTO,
 			Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId) {
@@ -141,7 +126,7 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 					List<SkillDTO> secondarySkills = new ArrayList<>();
 
 					List<UserSkillDetailsDTO> skills = skillMapByEmpId.getOrDefault(empId, List.of());
-					log.info(skills.toString());
+					//log.info(skills.toString());
 					for (UserSkillDetailsDTO skill : skills) {
 						String skillKey = skill.skillName().toUpperCase();
 //						if (seenSkillKeys.add(skillKey)) { // Only add unique skills
@@ -179,7 +164,7 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 						allocationCount++;
 
 						ProjectAllocationDetailsDTO updatedAlloc = new ProjectAllocationDetailsDTO(alloc.projectCode(),
-								alloc.projectName(), alloc.from(), alloc.to(), alloc.role(),
+								alloc.projectName(),alloc.isCustomer(), alloc.from(), alloc.to(), alloc.role(),
 								defaultZero(alloc.billability()), plannedUtil, actualUtil, daysWithEntries);
 
 						projectAllocationsDTO.add(updatedAlloc);
@@ -283,39 +268,40 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 	}
 
 	@Override
-	public Page<ResourceAllocationsDTO> searchAmongResources(Pageable pageable, ResourceFilterDTO resourceFilterDTO) {
+	public List<ResourceAllocationsDTO> searchAmongResources(ResourceFilterDTO resourceFilterDTO) {
 		List<String> empIds = null;
 		if (!resourceFilterDTO.skill().isBlank()) {
 			String skill = resourceFilterDTO.skill().isBlank() ? " " : resourceFilterDTO.skill();
-
-//			empIds =  List.of("Rnd123", "Rnd124", "Rnd125");
 			empIds = gptSkillNormalizerService.normalizeSkillSingle(new UserSkillDTO("Rnd124", List.of(skill)), 50);
 			log.info("EmpIds found for skill {}: {}", skill, empIds);
 		}
+
 		List<String> designation = null;
 		BigDecimal experience = resourceFilterDTO.experience() == null ? BigDecimal.ZERO
 				: resourceFilterDTO.experience();
+
 		if (resourceFilterDTO.designation().isEmpty() && (empIds == null || empIds.isEmpty())
 				&& (resourceFilterDTO.experience() == null
 						|| resourceFilterDTO.experience().compareTo(BigDecimal.ZERO) <= 0)) {
 			log.info("No designation or empIds provided for search, returning all resources");
-			return getAllResourceAllocations(pageable);
+			return getAllResourceAllocations();
 		}
 
-		else if (resourceFilterDTO.designation().isEmpty() || resourceFilterDTO.designation() == null) {
-			log.info("No designation or empIds provided for search, returning all resources");
+		if (resourceFilterDTO.designation() == null || resourceFilterDTO.designation().isEmpty()) {
+			log.info("No designation provided for search, ignoring designation filter");
 			designation = null;
-		} else if (!resourceFilterDTO.designation().isEmpty() && !(resourceFilterDTO.designation() == null)) {
+		} else {
 			log.info("Designation provided for search, filtering resources by designation");
 			designation = resourceFilterDTO.designation();
-
 		}
+
 		if (empIds != null && empIds.isEmpty()) {
 			empIds = null;
 		}
 
 		List<ResourceAllocationsFlatDTO> resourceAllocationFlatDTO = resourceAllocationRepository
 				.searchResourceAllocations(Roles.RESOURCE, empIds, designation, resourceFilterDTO.experience());
+
 		List<UserSkillDetailsDTO> userSingleSkillDTOs = userInfoRepository.fetchFlatUserSkillsByEmpIdIn(empIds);
 		Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId = userSingleSkillDTOs.stream()
 				.collect(Collectors.groupingBy(UserSkillDetailsDTO::empId));
@@ -332,28 +318,9 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 
 			resourceAllocationFlatDTO
 					.sort(Comparator.comparingInt(dto -> orderMap.getOrDefault(dto.id(), Integer.MAX_VALUE)));
-
 		}
 
-//log.info(resourceAllocationFlatDTO.toString());
-
-		// Group and convert to DTOs (custom logic here)
-		List<ResourceAllocationsDTO> groupedList = toResourceAllocationsDTO(resourceAllocationFlatDTO, skillMapByEmpId);
-
-		int pageSize = pageable.getPageSize();
-		int currentPage = pageable.getPageNumber();
-		int startItem = currentPage * pageSize;
-
-		List<ResourceAllocationsDTO> paginatedList;
-
-		if (startItem >= groupedList.size()) {
-			paginatedList = Collections.emptyList();
-		} else {
-			int toIndex = Math.min(startItem + pageSize, groupedList.size());
-			paginatedList = groupedList.subList(startItem, toIndex);
-		}
-
-		return new PageImpl<>(paginatedList, pageable, groupedList.size());
+		return toResourceAllocationsDTO(resourceAllocationFlatDTO, skillMapByEmpId);
 	}
 
 	@Override
@@ -484,7 +451,9 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 	@Transactional
 	public void dellocateResource(String projectId, String empId) {
 		LocalDate today = LocalDate.now();
+		log.info("Deallocating resource with empId: {} from projectId: {}", empId, projectId);
 		int deAllocated = resourceAllocationRepository.markAllocationsAsCompletedForResource(empId, projectId,today );
+		log.info("Deallocated {} allocations for empId: {} in project: {}", deAllocated, empId, projectId);
 		if(deAllocated == 0) {
 			log.warn("No allocations found to deallocate for empId: {} in project: {}", empId, projectId);
 			throw new RecordNotFoundException("No allocations found to deallocate for empId: " + empId + " in project: " + projectId);

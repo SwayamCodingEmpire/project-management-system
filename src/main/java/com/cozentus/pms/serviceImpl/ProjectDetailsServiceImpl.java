@@ -75,12 +75,12 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 	}
 
 	@Override
-	@Caching(evict = {
-			@CacheEvict(value = "resources", allEntries = true),
-		    @CacheEvict(value = "projectManagers", key = "'allProjectManagersWithProjects'"),
-		    @CacheEvict(value = "projects", allEntries = true),
-			@CacheEvict(value = "resourceAndAssociatedProjects", key = "'allProjectManagersWithProjects'")
-		})
+//	@Caching(evict = {
+//			@CacheEvict(value = "resources", allEntries = true),
+//		    @CacheEvict(value = "projectManagers", key = "'allProjectManagersWithProjects'"),
+//		    @CacheEvict(value = "projects", allEntries = true),
+//			@CacheEvict(value = "resourceAndAssociatedProjects", key = "'allProjectManagersWithProjects'")
+//		})
 	@Transactional
 	public void createProjectDetails(ProjectDTO projectDTO) {
 		
@@ -112,10 +112,12 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		}
 		UserInfo manager = entityManager.getReference(UserInfo.class, managerDTO.id());
 		projectDetails.setProjectManager(manager);
-		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, 32);
+		Integer deliveryManagerId = authenticationService.getCurrentUserDetails().getRight().userId();
+		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, deliveryManagerId);
 		projectDetails.setDeliveryManager(deliveryManager);	
 		
 		projectDetailsRepository.saveAndFlush(projectDetails);
+		credentialRepository.updateRoleByUserId(managerDTO.id(), Roles.PROJECT_MANAGER);
 		try {
 			emailService.sendProjectCreationEmailToManager("emailManager@gmail.com", projectDTO, managerDTO.name());
 		} catch (Exception e) {
@@ -124,11 +126,11 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		
 	}
 
-	@Override
-	@Cacheable(
-		    value = "dmProjects",
-		    key = "#search + '-' + #pageable.pageNumber + '-' + #pageable.pageSize + '-' + #deliveryManagerId"
-		)
+//	@Override
+//	@Cacheable(
+//		    value = "dmProjects",
+//		    key = "#search + '-' + #pageable.pageNumber + '-' + #pageable.pageSize + '-' + #deliveryManagerId"
+//		)
 		public Page<ProjectDetailsForProjectListDTO> fetchAllProjectsForDeliveryManager(
 		        String search, Pageable pageable, Integer deliveryManagerId) {
 		    
@@ -155,12 +157,12 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 	
 
 
-	@Caching(evict = {
-			@CacheEvict(value = "resources", allEntries = true),
-		    @CacheEvict(value = "projectManagers", key = "'allProjectManagersWithProjects'"),
-		    @CacheEvict(value = "projects", allEntries = true),
-		    @CacheEvict(value = "resourceAndAssociatedProjects", key = "'allProjectManagersWithProjects'")
-		})
+//	@Caching(evict = {
+//			@CacheEvict(value = "resources", allEntries = true),
+//		    @CacheEvict(value = "projectManagers", key = "'allProjectManagersWithProjects'"),
+//		    @CacheEvict(value = "projects", allEntries = true),
+//		    @CacheEvict(value = "resourceAndAssociatedProjects", key = "'allProjectManagersWithProjects'")
+//		})
 	@Override
 	@Transactional
 	public void updateProjectDetails(ProjectDTO projectDTO, String code) {
@@ -195,7 +197,7 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		projectDetails.setProjectManager(manager);
 		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, 32);
 		projectDetails.setDeliveryManager(deliveryManager);	
-		
+		credentialRepository.updateRoleByUserId(managerDTO.id(), Roles.PROJECT_MANAGER);
 		projectDetailsRepository.saveAndFlush(projectDetails);
 		
 		try {
@@ -248,16 +250,21 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 	    }
 
 	    return flatList.stream()
-	        .collect(Collectors.groupingBy(ProjectTypeDropdownDTO::projectCategory))
+	        .collect(Collectors.groupingBy(ProjectTypeDropdownDTO::isCustomerProject))
 	        .entrySet().stream()
-	        .map(entry -> new ProjectTypeDropdownGroupDTO(
-	            entry.getKey(), // label = projectCategory
-	            entry.getValue().stream()
+	        .map(entry -> {
+	            boolean isCustomer = entry.getKey();
+	            Boolean label = isCustomer;
+
+	            List<ProjectTypeOptionsDTO> options = entry.getValue().stream()
 	                .map(item -> new ProjectTypeOptionsDTO(item.id(), item.projectType(), item.projectType()))
-	                .toList()
-	        ))
+	                .toList();
+
+	            return new ProjectTypeDropdownGroupDTO(label, options);
+	        })
 	        .toList();
 	}
+
 
 	@Override
 	public void addSkillsToResources(String empId, SkillDTO skills, SkillPriority skillPriority) {	

@@ -17,6 +17,7 @@ import com.cozentus.pms.dto.ProjectManagerFlatDTO;
 import com.cozentus.pms.dto.ProjectTimesheetForEmailDTO;
 import com.cozentus.pms.dto.ReportingManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
+import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceFlatDTO;
 import com.cozentus.pms.dto.UserInfoIdentifierDTO;
 import com.cozentus.pms.dto.UserProjectTimesheetReminderDTO;
@@ -164,6 +165,15 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    WHERE u.empId = :empId
 		""")
 		List<UserSingleSkillDTO> fetchFlatUserSkillsByEmpID(String empId);
+	
+	@Query("""
+		    SELECT new com.cozentus.pms.dto.UserSingleSkillDTO(u.empId, s.skillName)
+		    FROM UserSkillDetail usd
+		    JOIN usd.user u
+		    JOIN usd.skill s
+		    WHERE u.empId = :empId
+		""")
+		List<UserSingleSkillDTO> fetchFlatUserSkillsByEmpIDIn(List<String> empId);
 	
 	@Query("""
 		    SELECT new com.cozentus.pms.dto.UserSkillDetailsDTO(u.empId, s.skillName, usd.experienceInYears,usd.priority,  usd.level)
@@ -438,7 +448,53 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		
 		@Query("SELECT u FROM UserInfo u LEFT JOIN FETCH u.reportingManager")
 		List<UserInfo> findAllWithManagers();
+		
+		
+		@Query("""
+			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
+			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			    )
+			    FROM UserInfo u 
+			    LEFT JOIN u.allocations a 
+			    WHERE EXISTS ( 
+			        SELECT 1 
+			        FROM UserSkillDetail usd 
+			        JOIN usd.skill s 
+			        WHERE usd.user.id = u.id 
+			          AND s.skillName = :skillName 
+			          AND usd.level = :level 
+			          AND usd.user.empId IN :empId
+			    )  
+			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
+			""") 
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId) ;
+		
+		
+		
+		@Query("""
+			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
+			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			    )
+			    FROM UserInfo u 
+			    LEFT JOIN u.allocations a 
+			    WHERE EXISTS ( 
+			        SELECT 1 
+			        FROM UserSkillDetail usd 
+			        JOIN usd.skill s 
+			        WHERE usd.user.id = u.id 
+			          AND s.skillName = :skillName 
+			          AND usd.level = :level 
+			          AND usd.user.empId IN :empIdList
+			    ) AND a.project.projectManager.empId = :empId
+			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
+			""") 
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsforPMByEmpIdIn(String skillName, String level, String empId, List<String> empIdList) ;
 
+		@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +
+			       "FROM UserSkillDetail usd " +
+			       "JOIN usd.user u " +
+			       "JOIN usd.skill s")
+			List<ResourceBasics> findAllResourceSkillLevel();
 
 
 }
