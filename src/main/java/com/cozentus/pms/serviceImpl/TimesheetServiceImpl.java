@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.messaging.MessagingException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +29,7 @@ import com.cozentus.pms.entites.ResourceAllocation;
 import com.cozentus.pms.entites.TimeSheet;
 import com.cozentus.pms.exceptions.RecordNotFoundException;
 import com.cozentus.pms.helpers.ApprovalStatus;
+import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.repositories.ProjectDetailsRepository;
 import com.cozentus.pms.repositories.ResourceAllocationRepository;
 import com.cozentus.pms.repositories.TimeSheetRepository;
@@ -166,9 +166,17 @@ public class TimesheetServiceImpl implements TimesheetService {
 
 	@Override
 	public List<TimesheetSummaryDTO> getTimeSheetSummaryByManagerId(String resourceId, LocalDate startDate,
-			LocalDate endDate) {
+			LocalDate endDate, Roles role) {
 		// TODO Auto-generated method stub
-		return timeSheetRepository.findTimeSheetSummaryByProjectManagerIdAndDateBetween(resourceId, startDate, endDate);
+		if(role.equals(Roles.DELIVERY_MANAGER)) {
+			return timeSheetRepository.findTimeSheetSummaryByDelieryManagerIdAndDateBetween(resourceId, startDate, endDate);
+		} else if(role.equals(Roles.PROJECT_MANAGER)) {
+			return timeSheetRepository.findTimeSheetSummaryByProjectManagerIdAndDateBetween(resourceId, startDate, endDate);
+		} else {
+			log.error("Invalid role provided: {}", role);
+			throw new IllegalArgumentException("Invalid role provided: " + role);
+		}
+		
 	}
 
 	@Override

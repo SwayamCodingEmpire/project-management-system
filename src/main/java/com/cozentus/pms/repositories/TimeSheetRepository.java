@@ -35,7 +35,7 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Integer> {
 		   "FROM ResourceAllocation r " +
 		   "LEFT JOIN r.timeSheets ts " +
 		   "LEFT JOIN r.project p " +
-		   "WHERE r.resource.empId = :empId AND p.id <> 1 AND  "
+		   "WHERE r.resource.empId = :empId AND p.id <> 1 AND ts.date BETWEEN :startDate AND :endDate AND ts.enabled = true AND "
 		   + "(:projectCode IS NULL OR :projectCode = '' OR p.projectCode = :projectCode) ")
 	List<TimesheetFlatDTO> findAllTimesheetByEmpIdAndDateBetween(String empId, LocalDate startDate, LocalDate endDate, String projectCode);
 	
@@ -70,6 +70,8 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Integer> {
 	
 	
 	
+	
+	
 	@Query("SELECT new com.cozentus.pms.dto.TimesheetForManagerFlatDTO("
 			+ "r.empId, "
 			+ "p.projectCode, "
@@ -97,6 +99,27 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Integer> {
 			+ "SET ts.approval = :approval, ts.approvalStatus = :approvalStatus, ts.updatedBy = :updatedBy "
 			+ "WHERE ts.resourceAllocation.id = :resourceAllocationId AND ts.date BETWEEN :startDate AND :endDate AND ts.enabled = true")
 	int approvetimesheetByAllocationIdAndDateAndEnabledTrue(Integer resourceAllocationId, LocalDate startDate, LocalDate endDate, boolean approval, ApprovalStatus approvalStatus, String updatedBy);
+	
+	
+	
+	@Query("SELECT new com.cozentus.pms.dto.TimesheetSummaryDTO("
+			+ "r.empId, "
+			+ "r.name, "
+			+ "r.role, "
+			+ "p.projectCode, "
+			+ "p.projectName, "
+			+ "ts.approvalStatus, "
+			+ "SUM(ts.hours) "
+			+ ") "
+			+ "FROM TimeSheet ts "
+			+ "LEFT JOIN ts.resourceAllocation ra "
+			+ "LEFT JOIN ra.project p "
+			+ "LEFT JOIN p.deliveryManager pm "
+			+ "LEFT JOIN ra.resource r "
+			+ "WHERE pm.empId = :deliveryManagerId AND ts.date BETWEEN :startDate AND :endDate "
+			+ "GROUP BY p.projectCode, r.empId, r.name, r.role, ts.approvalStatus ")
+	List<TimesheetSummaryDTO> findTimeSheetSummaryByDelieryManagerIdAndDateBetween(
+			String deliveryManagerId, LocalDate startDate, LocalDate endDate);
 
 	
 	

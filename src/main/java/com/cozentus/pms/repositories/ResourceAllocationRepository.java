@@ -234,9 +234,10 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    WHERE u.enabled = true
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
+		      AND p.deliveryManager.empId = :empId
 		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
-		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForDM(Roles role);
+		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForDM(Roles role, String empId);
 	
 	@Query("""
 		    SELECT new com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO(

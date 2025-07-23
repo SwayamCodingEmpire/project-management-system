@@ -171,7 +171,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    FROM UserSkillDetail usd
 		    JOIN usd.user u
 		    JOIN usd.skill s
-		    WHERE u.empId = :empId
+		    WHERE u.empId IN :empId
 		""")
 		List<UserSingleSkillDTO> fetchFlatUserSkillsByEmpIDIn(List<String> empId);
 	
@@ -377,8 +377,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			    FROM UserInfo u
 			    LEFT JOIN u.allocations a
 			    WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
+			    AND a.project.deliveryManager.empId = :empId
 			""")
-			DMResourceStatsDTO getResourceStatsCombined(Roles resourceRole);
+			DMResourceStatsDTO getResourceStatsCombined(Roles resourceRole, String empId);
 		
 		
 		@Query("""

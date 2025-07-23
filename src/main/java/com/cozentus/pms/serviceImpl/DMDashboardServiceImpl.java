@@ -35,9 +35,9 @@ public class DMDashboardServiceImpl implements DMDashboardService {
 	
 	public DMResourceStatsDTO getResourceBillabilityStats() {
 		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
-		
+		String dmEmpId = userAuthDetails.getRight().empId();
 		if (userAuthDetails.getLeft().equals(Roles.DELIVERY_MANAGER)) {
-			return userInfoRepository.getResourceStatsCombined(Roles.RESOURCE);
+			return userInfoRepository.getResourceStatsCombined(Roles.RESOURCE, dmEmpId);
 		}
 		String empId = userAuthDetails.getRight().empId();
 		return userInfoRepository.getResourceStatsCombinedForPM(Roles.RESOURCE,empId);
@@ -49,7 +49,8 @@ public class DMDashboardServiceImpl implements DMDashboardService {
 		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
 	    List<ResourceProjectUtilizationSummaryDTO> rows;
 	    if (userAuthDetails.getLeft().equals(Roles.DELIVERY_MANAGER)) {
-	        rows = resourceAllocationRepository.findResourceUtilizationSummaryForDM(Roles.RESOURCE);
+	    	String dmEmpId = userAuthDetails.getRight().empId();
+	        rows = resourceAllocationRepository.findResourceUtilizationSummaryForDM(Roles.RESOURCE, dmEmpId);
 	    }
 	    else {
 	    	rows = resourceAllocationRepository.findResourceUtilizationSummaryForPm(Roles.RESOURCE, userAuthDetails.getRight().empId());

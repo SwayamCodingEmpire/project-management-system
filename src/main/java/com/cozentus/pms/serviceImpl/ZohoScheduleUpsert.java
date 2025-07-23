@@ -106,6 +106,7 @@ public class ZohoScheduleUpsert {
 	        changed |= updateField(user::getEmailId, user::setEmailId, dto.emailId());
 	        changed |= updateField(user::getDesignation, user::setDesignation, dto.designation());
 	        changed |= updateField(user::getEmployeeType, user::setEmployeeType, dto.employeeType());
+	        log.info(dto.employeeType());
 
 	        BigDecimal exp = new BigDecimal(dto.experience())
 	                .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
@@ -113,6 +114,8 @@ public class ZohoScheduleUpsert {
 	            user.setExpInYears(exp);
 	            changed = true;
 	        }
+	        
+	        user.setEmployeeType(dto.employeeType());
 
 	        if (isNew || changed) {
 	            existingUserMap.put(empId, user); // track newly created too
@@ -150,7 +153,7 @@ public class ZohoScheduleUpsert {
 	        log.info("Updated {} users with reporting managers (pass 2)", toUpdateRM.size());
 	    }
 	    
-	    gptSkillNormalizerServiceImpl.populateQuadrantVectorDBForMultiUser(toInsertEmpIds);
+//	    gptSkillNormalizerServiceImpl.populateQuadrantVectorDBForMultiUser(toInsertEmpIds);
 	}
 
 	

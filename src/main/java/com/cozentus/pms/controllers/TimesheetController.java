@@ -16,6 +16,7 @@ import com.cozentus.pms.dto.SingularTimesheetPayload;
 import com.cozentus.pms.dto.TimesheetApprovalDTO;
 import com.cozentus.pms.dto.TimesheetDTO;
 import com.cozentus.pms.dto.TimesheetSummaryDTO;
+import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.TimesheetService;
 @RestController
@@ -59,7 +60,8 @@ public class TimesheetController {
 			@RequestParam
 			LocalDate endDate) {
 		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
-		List<TimesheetSummaryDTO> timesheetSummary = timesheetService.getTimeSheetSummaryByManagerId(empId, startDate, endDate);
+		Roles role = authenticationService.getCurrentUserDetails().getLeft();
+		List<TimesheetSummaryDTO> timesheetSummary = timesheetService.getTimeSheetSummaryByManagerId(empId, startDate, endDate, role);
 		return ResponseEntity.ok(timesheetSummary);
 	}
 	
