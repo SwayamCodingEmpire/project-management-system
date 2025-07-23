@@ -2,7 +2,6 @@ package com.cozentus.pms.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +11,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.cozentus.pms.filters.JwtAuthenticationFilter;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 
 @Configuration
 @EnableWebSecurity
@@ -26,7 +33,17 @@ public class SecurityConfig {
     
     private static final String[] PUBLIC_URLS = {
     		"/public/**",  // public endpoints
-    		"/poc/**"
+    		"/poc/**",
+    		"/actuator/**",
+    		"/swagger-ui/index.html",
+    	       "/server1/**",
+               "/v3/api-docs",
+               "/v2/api-docs",
+               "/v3/api-docs/**",
+               "/swagger-resources/**",
+               "/swagger-ui/**",
+               "/webjars/**",
+               "/swagger-ui.html",
     		
 
     };
@@ -91,6 +108,18 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable());
         return httpSecurity.build();
+    }
+    
+    @Bean
+    public OpenAPI openAPI(){
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
+                .info(new Info().title("Resource Management System APIs")
+                        .description("This is the backend of the Resource Management System, which provides APIs for managing resources, projects, and timesheets.")
+                        .version("v2.0")
+                        .license(new License().name("Apache 2.0").url("http://springdoc.org")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
     
 }

@@ -114,9 +114,9 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, Integer> {
 			+ "FROM TimeSheet ts "
 			+ "LEFT JOIN ts.resourceAllocation ra "
 			+ "LEFT JOIN ra.project p "
-			+ "LEFT JOIN p.deliveryManager pm "
+			+ "LEFT JOIN p.deliveryManager dm "
 			+ "LEFT JOIN ra.resource r "
-			+ "WHERE pm.empId = :deliveryManagerId AND ts.date BETWEEN :startDate AND :endDate "
+			+ "WHERE dm.empId = :deliveryManagerId AND ts.date BETWEEN :startDate AND :endDate "
 			+ "GROUP BY p.projectCode, r.empId, r.name, r.role, ts.approvalStatus ")
 	List<TimesheetSummaryDTO> findTimeSheetSummaryByDelieryManagerIdAndDateBetween(
 			String deliveryManagerId, LocalDate startDate, LocalDate endDate);
