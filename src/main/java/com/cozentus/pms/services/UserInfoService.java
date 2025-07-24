@@ -28,7 +28,9 @@ public interface UserInfoService {
 	void addSkillToResources(String empId, String skillName, SkillUpsertDTO skillUpsertDTO);
 	List<String> getAllSkills();
 	void deleteSkillFromResource(String empId, String skillName);
-	Set<ResourceBasics> getAllResourceSkillLevel();
+//	Set<ResourceBasics> getAllResourceSkillLevel();
+	Set<ResourceBasics> getSkillsForDM(String dmEmpId)	;
+	Set<ResourceBasics> getSkillsForPM(String pmEmpId);
 	
 
 }

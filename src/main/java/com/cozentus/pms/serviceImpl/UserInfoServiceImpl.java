@@ -368,9 +368,20 @@ public class UserInfoServiceImpl implements UserInfoService {
 		
 	}
 	
+//	@Override
+//	public Set<ResourceBasics> getAllResourceSkillLevel() {
+//	    return userInfoRepository.findAllResourceSkillLevel();
+//	}
+	
 	@Override
-	public Set<ResourceBasics> getAllResourceSkillLevel() {
-	    return userInfoRepository.findAllResourceSkillLevel();
+	public Set<ResourceBasics> getSkillsForDM(String dmEmpId) {
+        return userInfoRepository.findAllResourceSkillLevelForDM(dmEmpId);
+ 
+	}
+	@Override
+	public Set<ResourceBasics> getSkillsForPM(String pmEmpId) {
+        return userInfoRepository.findAllResourceSkillLevelForPM(pmEmpId);
+ 
 	}
 
 }

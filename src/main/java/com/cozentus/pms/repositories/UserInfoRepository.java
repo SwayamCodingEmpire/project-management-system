@@ -9,6 +9,7 @@ import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cozentus.pms.dto.DMResourceStatsDTO;
@@ -20,7 +21,6 @@ import com.cozentus.pms.dto.ReportingManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
 import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceFlatDTO;
-import com.cozentus.pms.dto.DMResourceStatsDTO;
 import com.cozentus.pms.dto.UserInfoIdentifierDTO;
 import com.cozentus.pms.dto.UserProjectTimesheetReminderDTO;
 import com.cozentus.pms.dto.UserSingleSkillDTO;
@@ -550,5 +550,22 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 				AND a.project.projectManager.empId = :empId
 				""")
 				DMResourceStatsPartialDTO getResourceStatsPMSpecific(Roles resourceRole, String empId);
+		
+		@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +
+			       "FROM UserSkillDetail usd " +
+			       "JOIN usd.user u " +
+			       "JOIN usd.skill s " +
+			       "WHERE u.reportingManager.empId = :dmEmpId")
+			Set<ResourceBasics> findAllResourceSkillLevelForDM(String dmEmpId);
+	 
+			// 2. PM ke resources ke liye
+			@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +
+			       "FROM UserSkillDetail usd " +
+			       "JOIN usd.user u " +
+			       "JOIN usd.skill s " +
+			       "JOIN u.allocations ra " +
+			       "JOIN ra.project p " +
+			       "WHERE p.projectManager.empId = :pmEmpId")
+			Set<ResourceBasics> findAllResourceSkillLevelForPM(String pmEmpId);
 
 }

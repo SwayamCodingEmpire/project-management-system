@@ -1,6 +1,5 @@
 package com.cozentus.pms.serviceImpl;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,15 +16,17 @@ import com.cozentus.pms.dto.SkillCountDTO;
 import com.cozentus.pms.dto.UserSkillDTO;
 import com.cozentus.pms.dto.UserSkillDetailsWithNameDTO;
 import com.cozentus.pms.entites.Skill;
+import com.cozentus.pms.exceptions.RecordNotFoundException;
 import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.repositories.SkillRepository;
 import com.cozentus.pms.services.GptSkillNormalizerService;
+import com.cozentus.pms.services.SkillService;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class SkillServiceImpl {
+public class SkillServiceImpl implements SkillService {
 	private final SkillRepository skillRepository;
 	private final GptSkillNormalizerService gptSkillNormalizerService;
 	
@@ -135,6 +136,29 @@ public class SkillServiceImpl {
 	public List<SkillCountDTO> getSkillCountsBySearch(Roles role, String empId, String search) {
 
 		return List.of(); // Placeholder for actual implementation	
+	}
+	
+	public void updateSkill(String oldSkillName, String newSkillName) {
+		if(skillRepository.updateSkillNameByName(oldSkillName, newSkillName)>0) {
+			log.info("Skill name updated from {} to {}", oldSkillName, newSkillName);
+		}
+		else {
+			log.error("Failed to update skill name from {} to {}", oldSkillName, newSkillName);
+			throw new RecordNotFoundException("Failed to update skill name");
+		}
+	}
+
+
+	@Override
+	public void deleteSkill(String skillName) {
+		if(skillRepository.deleteBySkillName(skillName)>0) {
+			log.info("Skill {} deleted successfully", skillName);
+		}
+		else {
+			log.error("Failed to delete skill {}", skillName);
+			throw new RecordNotFoundException("Failed to delete skill name");
+		}
+		
 	}
 	
 }

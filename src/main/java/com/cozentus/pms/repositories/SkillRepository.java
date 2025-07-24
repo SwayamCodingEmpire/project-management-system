@@ -93,6 +93,19 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 	@Query("SELECT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(s.skillName, u.empId, usd.level) " +
 			   "FROM UserSkillDetail usd JOIN usd.skill s JOIN usd.user u WHERE usd.level IS NOT NULL AND u.empId IN :empIds")
 		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(List<String> empIds);
+	
+	
+	
+	@Transactional
+	@Modifying
+	@Query("UPDATE Skill s SET s.skillName = :newSkillName WHERE s.skillName = :oldSkillName")
+	int updateSkillNameByName(String oldSkillName, String newSkillName);
+	
+	@Transactional
+	@Modifying
+	@Query("DELETE FROM Skill s WHERE s.skillName = :skillName")
+	int deleteBySkillName(String skillName);
+	
 
 
 

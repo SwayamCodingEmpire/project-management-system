@@ -106,30 +106,30 @@ public class ManagerDashboardController {
 	    Roles role = userDetails.getLeft();
 	    String empId = userDetails.getRight().empId();
 	    Integer userId = userDetails.getRight().userId();
-
+ 
 	    // Fetch each piece of data
 	    KeyPerformanceIndicatorsDTO kpi = KeyPerformanceIndicatorsDTO.from(
 	        dmDashboardService.getResourceBillabilityStats(),
 	        dmDashboardService.computeUtilizationBreakdown()
 	    );
-
+ 
 	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, empId, null);
-
+ 
 	    Set<ResourceBasics> skillResourceDetails = new HashSet<>();
 	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
-	    	skillResourceDetails = userInfoService.getAllResourceSkillLevel();
-
+	    	skillResourceDetails = userInfoService.getSkillsForDM(empId);
+ 
 	    }
-	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
-	    //Write the logic here
+	    if(role.equals(Roles.PROJECT_MANAGER) && skillName != null && level != null) {
+	    	skillResourceDetails = userInfoService.getSkillsForPM(empId);
 	    }
 	    
-
-
+ 
+ 
 	    List<ProjectDashboardDTO> projectDetails = projectDetailsService.getDashboardData(userId, role);
-
+ 
 	    List<ProjectManagerProjectCountDTO> projectCount = projectDetailsService.getProjectManagersUnderManager(empId);
-
+ 
 	    // Collect projects under all PMs
 	    Map<String, List<ProjectMinimalDataDTO>> projectsByPm = new HashMap<>();
 	    for (ProjectManagerProjectCountDTO pm : projectCount) {
@@ -137,11 +137,11 @@ public class ManagerDashboardController {
 	        List<ProjectMinimalDataDTO> pmProjects = projectDetailsService.getProjectsUnderManager(pmEmpId, empId);
 	        projectsByPm.put(pmEmpId, pmProjects);
 	    }
-
+ 
 	    ManagerDashboardExportDTO exportDTO = new ManagerDashboardExportDTO(
 	        kpi, skillCounts, skillResourceDetails, projectDetails, projectCount, projectsByPm
 	    );
-
+ 
 	    return ResponseEntity.ok(exportDTO);
 	}
 	
