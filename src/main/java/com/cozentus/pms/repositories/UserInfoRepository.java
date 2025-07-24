@@ -381,8 +381,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			        END)
 			    )
 			    FROM UserInfo u
-			    LEFT JOIN u.allocations a
+			    JOIN u.allocations a
 			    WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
+			    AND a.project.deliveryManager.empId = :empId AND a.project.id <> 1
 			""")
 			DMResourceStatsDTO getResourceStatsCombined(Roles resourceRole, String empId);
 		

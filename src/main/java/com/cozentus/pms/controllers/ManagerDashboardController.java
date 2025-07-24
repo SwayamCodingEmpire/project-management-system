@@ -53,7 +53,7 @@ public class ManagerDashboardController {
 	public ResponseEntity<KeyPerformanceIndicatorsDTO> getKPI() {
 		return ResponseEntity.ok(
 				KeyPerformanceIndicatorsDTO.from(
-						dmDashboardService.getResourceBillabilityStatsModified(), 
+						dmDashboardService.getResourceBillabilityStats(), 
 						dmDashboardService.computeUtilizationBreakdown()
 						)
 				);
