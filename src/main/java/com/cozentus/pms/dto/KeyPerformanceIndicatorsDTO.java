@@ -2,6 +2,7 @@ package com.cozentus.pms.dto;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.function.Function;
 
 public record KeyPerformanceIndicatorsDTO(
 		 int totalResources,
@@ -12,24 +13,30 @@ public record KeyPerformanceIndicatorsDTO(
 		    BigDecimal nonCustomerActualUtilization,
 		    int nonUtilizedResources
 		) {
-	 public static KeyPerformanceIndicatorsDTO from(DMResourceStatsDTO dmStats, UtilizationBreakdownDTO utilStats) {
-	        int totalResources = dmStats.totalResourceUsers().intValue();
+	public static KeyPerformanceIndicatorsDTO from(DMResourceStatsDTO dmStats, UtilizationBreakdownDTO utilStats) {
+	    int totalResources = dmStats.totalResourceUsers().intValue();
 
-	        BigDecimal billed = dmStats.totalBillability()
-	            .multiply(BigDecimal.valueOf(totalResources))
-	            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+	    BigDecimal billed = dmStats.totalBillability()
+	        .multiply(BigDecimal.valueOf(totalResources))
+	        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+	        .setScale(2, RoundingMode.HALF_UP); // Ensures billed is 2-decimal rounded
 
-	        int notBilled = totalResources - billed.setScale(0, RoundingMode.HALF_UP).intValue();
+	    int notBilled = totalResources - billed.setScale(0, RoundingMode.HALF_UP).intValue(); // for integer diff
 
-	        return new KeyPerformanceIndicatorsDTO(
-	            totalResources,
-	            new BilledNotBilledDTO(billed, notBilled),
-	            utilStats.actualUtilCustomer(),
-	            utilStats.plannedUtilCustomer(),
-	            utilStats.plannedUtilInternal(),
-	            utilStats.actualUtilInternal(),
-	            dmStats.zeroOrNoPlannedUtilisation().intValue()
-	        );
-	    }
+	    // Helper for rounding util values
+	    Function<BigDecimal, BigDecimal> round = val ->
+	        val == null ? null : val.setScale(2, RoundingMode.HALF_UP);
+
+	    return new KeyPerformanceIndicatorsDTO(
+	        totalResources,
+	        new BilledNotBilledDTO(billed, notBilled),
+	        round.apply(utilStats.actualUtilCustomer()),
+	        round.apply(utilStats.plannedUtilCustomer()),
+	        round.apply(utilStats.plannedUtilInternal()),
+	        round.apply(utilStats.actualUtilInternal()),
+	        dmStats.zeroOrNoPlannedUtilisation().intValue()
+	    );
+	}
+
 
 }

@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class ProjectTypeSummaryDTO {
 	private Integer id;
 	private String projectType;
-	private boolean isCustomer;
+	private Boolean isCustomerProject;
 }

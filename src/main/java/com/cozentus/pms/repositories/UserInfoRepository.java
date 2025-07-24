@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cozentus.pms.dto.DMResourceStatsDTO;
+import com.cozentus.pms.dto.DMResourceStatsPartialDTO;
 import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
 import com.cozentus.pms.dto.ProjectTimesheetForEmailDTO;
@@ -19,6 +20,7 @@ import com.cozentus.pms.dto.ReportingManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
 import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceFlatDTO;
+import com.cozentus.pms.dto.DMResourceStatsDTO;
 import com.cozentus.pms.dto.UserInfoIdentifierDTO;
 import com.cozentus.pms.dto.UserProjectTimesheetReminderDTO;
 import com.cozentus.pms.dto.UserSingleSkillDTO;
@@ -65,7 +67,6 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 
 
 	Optional<UserInfo> findByEmpId(String empId);
-
 	@Query("""
 		    SELECT new com.cozentus.pms.dto.ResourceFlatDTO(
 		        e.empId,
@@ -114,6 +115,11 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		      )
 		""")
 		List<ResourceFlatDTO> findAllResourcesWithAllocations(String search, Roles role);
+
+
+
+
+
 
 
 	List<ReportingManagerDTO> findAllByEnabledTrue();
@@ -377,7 +383,6 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			    FROM UserInfo u
 			    LEFT JOIN u.allocations a
 			    WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
-			    AND a.project.deliveryManager.empId = :empId
 			""")
 			DMResourceStatsDTO getResourceStatsCombined(Roles resourceRole, String empId);
 		
@@ -496,6 +501,53 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			       "JOIN usd.user u " +
 			       "JOIN usd.skill s")
 			List<ResourceBasics> findAllResourceSkillLevel();
+		
+		
+		@Query("""
+				SELECT new com.cozentus.pms.dto.DMResourceStatsPartialDTO(
+				    SUM(COALESCE(a.billabilityPercent, 0))/100,
+				    COUNT(DISTINCT u.id),
+				    COUNT(DISTINCT CASE
+				        WHEN (a.id IS NULL OR COALESCE(a.billabilityPercent, 0) = 0) THEN u.id
+				        ELSE NULL
+				    END)
+				)
+				FROM UserInfo u
+				LEFT JOIN u.allocations a
+				WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
+				AND a.project.deliveryManager.empId = :empId
+				""")
+				DMResourceStatsPartialDTO getResourceStatsDMSpecific(Roles resourceRole, String empId);
 
+		
+		@Query("""
+				SELECT COUNT(DISTINCT CASE
+				    WHEN a.id IS NULL THEN u.id
+				    WHEN COALESCE(a.plannedHours, 0) = 0 THEN u.id
+				    WHEN (a.project.id = 1 AND a.allocationCompleted = false) THEN u.id
+				    ELSE NULL
+				END)
+				FROM UserInfo u
+				LEFT JOIN u.allocations a
+				WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
+				""")
+				Long getGlobalZeroPlannedUtilizationCount(Roles resourceRole);
+		
+		
+		@Query("""
+				SELECT new com.cozentus.pms.dto.DMResourceStatsPartialDTO(
+				    SUM(COALESCE(a.billabilityPercent, 0))/100,
+				    COUNT(DISTINCT u.id),
+				    COUNT(DISTINCT CASE
+				        WHEN (a.id IS NULL OR COALESCE(a.billabilityPercent, 0) = 0) THEN u.id
+				        ELSE NULL
+				    END)
+				)
+				FROM UserInfo u
+				LEFT JOIN u.allocations a
+				WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
+				AND a.project.projectManager.empId = :empId
+				""")
+				DMResourceStatsPartialDTO getResourceStatsPMSpecific(Roles resourceRole, String empId);
 
 }

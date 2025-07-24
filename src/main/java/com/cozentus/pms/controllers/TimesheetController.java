@@ -1,8 +1,8 @@
 package com.cozentus.pms.controllers;
-
+ 
 import java.time.LocalDate;
 import java.util.List;
-
+ 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+ 
 import com.cozentus.pms.dto.SingularTimesheetPayload;
 import com.cozentus.pms.dto.TimesheetApprovalDTO;
 import com.cozentus.pms.dto.TimesheetDTO;
@@ -32,12 +32,13 @@ public class TimesheetController {
 	
 	@GetMapping
 	public ResponseEntity<List<TimesheetDTO>> getTimesheetByEmpId(@RequestParam
-			LocalDate startDate, 
+			LocalDate startDate,
 			@RequestParam
 			
 			LocalDate endDate) {
 		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
 		List<TimesheetDTO> timesheetDTOs = timesheetService.getTimeSheetByEmpId(empId, startDate, endDate);
+		System.out.println(timesheetDTOs);
 		return ResponseEntity.ok(timesheetDTOs);
 	}
 	
@@ -56,7 +57,7 @@ public class TimesheetController {
 	
 	@GetMapping("/summary")
 	public ResponseEntity<List<TimesheetSummaryDTO>> getTimesheetSummaryByManagerId(@RequestParam	
-			LocalDate startDate, 
+			LocalDate startDate,
 			@RequestParam
 			LocalDate endDate) {
 		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
@@ -90,5 +91,5 @@ public class TimesheetController {
 		return ResponseEntity.ok("Timesheet approval processed successfully");
 	}
 	
-
+ 
 }

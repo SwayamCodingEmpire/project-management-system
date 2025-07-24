@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import com.cozentus.pms.helpers.SkillPriority;
 import com.cozentus.pms.repositories.CredentialRepository;
 import com.cozentus.pms.repositories.SkillRepository;
 import com.cozentus.pms.repositories.UserInfoRepository;
+import com.cozentus.pms.services.GptSkillNormalizerService;
 import com.cozentus.pms.services.ZohoService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,13 +44,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ZohoScheduleUpsert {
 
-    private final GptSkillNormalizerServiceImpl gptSkillNormalizerServiceImpl;
+    private final GptSkillNormalizerService gptSkillNormalizerServiceImpl;
 	private final ZohoService zohoService;
 	private final UserInfoRepository userInfoRepository;
 	private final CredentialRepository credentialRepository;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final SkillRepository skillRepository;
-	public ZohoScheduleUpsert(ZohoService zohoService, UserInfoRepository userInfoRepository, CredentialRepository credentialRepository, BCryptPasswordEncoder passwordEncoder, SkillRepository skillRepository, GptSkillNormalizerServiceImpl gptSkillNormalizerServiceImpl) {
+	public ZohoScheduleUpsert(ZohoService zohoService, UserInfoRepository userInfoRepository, CredentialRepository credentialRepository, BCryptPasswordEncoder passwordEncoder, SkillRepository skillRepository, GptSkillNormalizerService gptSkillNormalizerServiceImpl) {
 		this.zohoService = zohoService;
 		this.userInfoRepository = userInfoRepository;
 		this.credentialRepository = credentialRepository;
@@ -56,6 +58,9 @@ public class ZohoScheduleUpsert {
 		this.skillRepository = skillRepository;
 		this.gptSkillNormalizerServiceImpl = gptSkillNormalizerServiceImpl;
 	}
+	
+	
+	@Scheduled(cron = "0 0 9 * * TUE")
 	@Transactional
 	public void syncResourcesWithDB() {
 		List<String> toInsertEmpIds = new ArrayList<>();

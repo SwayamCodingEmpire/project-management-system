@@ -165,10 +165,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	                });
 	        
 	        ProjectAllocationDTO projectAllocationDTO = resourceFlatDTO.allocation();
-	        if (projectAllocationDTO != null && (projectAllocationDTO.projectName() != null
-	                || projectAllocationDTO.description() != null || projectAllocationDTO.projectCode() != null
-	                || projectAllocationDTO.startDate() != null || projectAllocationDTO.endDate() != null
-	                || projectAllocationDTO.projectManager() != null)) {
+	        if (isValidAllocation(projectAllocationDTO)) {
 	            resource.allocation().add(projectAllocationDTO);
 	        }
 	    }
@@ -183,6 +180,15 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 	    return new PageImpl<>(pagedResourceDTO, pageable, resourceDTO.size());
 	}
+	
+	private boolean isValidAllocation(ProjectAllocationDTO projectAllocationDTO) {
+	    return projectAllocationDTO != null &&
+	           projectAllocationDTO.projectCode() != null &&
+	           projectAllocationDTO.projectName() != null &&
+	           projectAllocationDTO.startDate() != null &&
+	           projectAllocationDTO.endDate() != null;
+	}
+
 
 	@Transactional
 	@Caching(evict = { @CacheEvict(value = "resources", allEntries = true),
@@ -251,7 +257,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	
 	
 	public List<ResourceBasicDTO> getAllResourcesAccordingToSkillsAndLevels(String skillName, String level, String search) {
-		Roles role = Roles.DELIVERY_MANAGER;
+		Roles role = authenticationService.getCurrentUserDetails().getLeft();
 		log.info("Fetching resources with skill: {}, level: {}, search: {}", skillName, level, search);
 		List<ResourceBasicDTO> resourceList = new ArrayList<>();
 		if (role.equals(Roles.DELIVERY_MANAGER)) {

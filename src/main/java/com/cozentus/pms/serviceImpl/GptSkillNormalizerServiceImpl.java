@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.dto.UserSingleSkillDTO;
@@ -191,6 +192,7 @@ public class GptSkillNormalizerServiceImpl implements GptSkillNormalizerService 
 	}
 
 	
+	@Async
 	public void populateQuadrantVectorDBForSingleUser(String empId) {
 		List<UserSingleSkillDTO> flatList = userInfoRepository.fetchFlatUserSkillsByEmpID(empId);
 

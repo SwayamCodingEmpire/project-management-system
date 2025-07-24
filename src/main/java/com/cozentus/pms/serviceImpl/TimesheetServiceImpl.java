@@ -1,5 +1,5 @@
 package com.cozentus.pms.serviceImpl;
-
+ 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+ 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+ 
 import com.cozentus.pms.dto.DateRange;
 import com.cozentus.pms.dto.DayWiseTimesheet;
 import com.cozentus.pms.dto.IdAndCodeDTO;
@@ -35,48 +35,50 @@ import com.cozentus.pms.repositories.ResourceAllocationRepository;
 import com.cozentus.pms.repositories.TimeSheetRepository;
 import com.cozentus.pms.services.EmailService;
 import com.cozentus.pms.services.TimesheetService;
-
+ 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
-
+ 
 @Service
 @Slf4j
 public class TimesheetServiceImpl implements TimesheetService {
 	private final TimeSheetRepository timeSheetRepository;
 	private final ResourceAllocationRepository resourceAllocationRepository;
-	private final ProjectDetailsRepository projectDetailsRepository;	
+	private final ProjectDetailsRepository projectDetailsRepository;
 	private final EmailService emailService;
 	@PersistenceContext
 	private EntityManager entityManager;
-
+ 
 	public TimesheetServiceImpl(TimeSheetRepository timeSheetRepository,
-			ResourceAllocationRepository resourceAllocationRepository, EmailService emailService, ProjectDetailsRepository projectDetailsRepository) {
+			ResourceAllocationRepository resourceAllocationRepository, EmailService emailService,
+			ProjectDetailsRepository projectDetailsRepository) {
 		this.timeSheetRepository = timeSheetRepository;
 		this.resourceAllocationRepository = resourceAllocationRepository;
 		this.emailService = emailService;
 		this.projectDetailsRepository = projectDetailsRepository;
 	}
-
+ 
 	public List<TimesheetDTO> getTimeSheetByEmpId(String resourceId, LocalDate startDate, LocalDate endDate) {
 		List<TimesheetFlatDTO> timesheetFlatDTOs = timeSheetRepository.findAllTimesheetByEmpIdAndDateBetween(resourceId,
 				startDate, endDate, null);
 		log.info("Fetched {} timesheets for empId: {} between {} and {}", timesheetFlatDTOs, resourceId, startDate,
 				endDate);
+		System.out.println(timesheetFlatDTOs);
 		return timesheetFlatDTOs.stream()
 				.collect(Collectors.groupingBy(ts -> new AbstractMap.SimpleEntry<>(ts.projectCode(), ts.projectName())))
 				.entrySet().stream().map(entry -> {
 					String projectCode = entry.getKey().getKey();
 					String projectName = entry.getKey().getValue();
 					List<ProjectTimeSheetDTO> timeSheets = entry.getValue().stream()
-							.map(ts -> new ProjectTimeSheetDTO(ts.projectTimeSheet().date(), ts.projectTimeSheet().approvalStatus(),
-									ts.projectTimeSheet().attendanceStatus(),
+							.map(ts -> new ProjectTimeSheetDTO(ts.projectTimeSheet().date(),
+									ts.projectTimeSheet().approvalStatus(), ts.projectTimeSheet().attendanceStatus(),
 									ts.projectTimeSheet().hoursWorked() /* , etc */))
 							.collect(Collectors.toList());
 					return new TimesheetDTO(projectCode, projectName, timeSheets);
 				}).collect(Collectors.toList());
 	}
-
+ 
 	@Override
 	@Transactional
 	public void saveTimesheet(SingularTimesheetPayload singularTimesheetPayload, String resourceId) {
@@ -86,14 +88,14 @@ public class TimesheetServiceImpl implements TimesheetService {
 				.fetchAllocationsIdForProjectCodeAndResourceId(
 						singularTimesheetPayload.dayTimeSheet().stream().map(DayWiseTimesheet::projectCode).toList(),
 						resourceId);
-
+ 
 		log.info("Allocation IDs for resource and projects: {}", allocationIdsForResourceAndProjects);
 		Map<Integer, String> idToCodeMap = allocationIdsForResourceAndProjects.stream()
 				.collect(Collectors.toMap(IdAndCodeDTO::id, IdAndCodeDTO::code));
 		log.info("ID to Code Map: {}", idToCodeMap);
 		Map<String, DayWiseTimesheet> projectCodeToDayWiseTimesheetMap = singularTimesheetPayload.dayTimeSheet()
 				.stream().collect(Collectors.toMap(DayWiseTimesheet::projectCode, dayWise -> dayWise));
-
+ 
 		LocalDate timesheetDate = singularTimesheetPayload.date();
 		log.info("Today's date for timesheet: {}", timesheetDate);
 		List<TimeSheet> existingTimeSheets = timeSheetRepository.findByResourceAllocation_IdInAndDateAndEnabledTrue(
@@ -123,14 +125,14 @@ public class TimesheetServiceImpl implements TimesheetService {
 				existingTimeSheet.setUpdatedAt(LocalDateTime.now());// Reset hours to zero
 				existingTimeSheet
 						.setAttendanceStatus(projectCodeToDayWiseTimesheetMap.get(projectCode).attendanceStatus());
-
+ 
 			}
-
+ 
 		}
-
+ 
 		List<TimeSheet> timeSheets = new ArrayList<>();
 		List<DayWiseTimesheet> dayWiseTimesheets = singularTimesheetPayload.dayTimeSheet();
-
+ 
 		timeSheets.addAll(existingTimeSheets);
 		log.info("Processing {} day-wise timesheets for resource: {}", dayWiseTimesheets, resourceId);
 		log.info(allocationIdsForResourceAndProjects.toString());
@@ -142,9 +144,9 @@ public class TimesheetServiceImpl implements TimesheetService {
 							() -> new RecordNotFoundException("No allocation found for project code: " + projectCode));
 			ResourceAllocation resourceAllocation = entityManager.getReference(ResourceAllocation.class,
 					allocationIdForProject.id());
-
+ 
 			TimeSheet timeSheet = new TimeSheet();
-
+ 
 			timeSheet.setDate(timesheetDate);
 			timeSheet.setHours(hoursWorked);
 			timeSheet.setResourceAllocation(resourceAllocation);
@@ -154,80 +156,81 @@ public class TimesheetServiceImpl implements TimesheetService {
 			timeSheet.setUpdatedBy(resourceId);
 			timeSheet.setEnabled(true);
 			timeSheets.add(timeSheet);
-			timeSheet.setApprovalStatus(ApprovalStatus.SUBMITTED);
-
+			timeSheet.setApprovalStatus(ApprovalStatus.PENDING);
+ 
 		}
 		if (!existingTimeSheets.isEmpty()) {
 			timeSheets.addAll(existingTimeSheets);
 		}
-
+ 
 		timeSheetRepository.saveAllAndFlush(timeSheets);
 	}
-
+ 
 	@Override
 	public List<TimesheetSummaryDTO> getTimeSheetSummaryByManagerId(String resourceId, LocalDate startDate,
 			LocalDate endDate, Roles role) {
 		// TODO Auto-generated method stub
-		if(role.equals(Roles.DELIVERY_MANAGER)) {
-			return timeSheetRepository.findTimeSheetSummaryByDelieryManagerIdAndDateBetween(resourceId, startDate, endDate);
-		} else if(role.equals(Roles.PROJECT_MANAGER)) {
-			return timeSheetRepository.findTimeSheetSummaryByProjectManagerIdAndDateBetween(resourceId, startDate, endDate);
+		if (role.equals(Roles.DELIVERY_MANAGER)) {
+			return timeSheetRepository.findTimeSheetSummaryByDelieryManagerIdAndDateBetween(resourceId, startDate,
+					endDate);
+		} else if (role.equals(Roles.PROJECT_MANAGER)) {
+			return timeSheetRepository.findTimeSheetSummaryByProjectManagerIdAndDateBetween(resourceId, startDate,
+					endDate);
 		} else {
 			log.error("Invalid role provided: {}", role);
 			throw new IllegalArgumentException("Invalid role provided: " + role);
 		}
-		
+ 
 	}
-
+ 
 	@Override
 	public TimesheetDTO getTimeSheetByManagerIdAndresourceIdAndProjectCode(String resourceId, LocalDate startDate,
 			LocalDate endDate, String projectCode, String managerId) {
 		List<TimesheetForManagerFlatDTO> timesheetFlatDTOs = timeSheetRepository
 				.findAllTimesheetByEmpIdAndProjectCodeAndManagerIdDateBetween(resourceId, managerId, startDate, endDate,
 						projectCode);
-
+ 
 		log.info("Fetched {} timesheets for empId: {} between {} and {}", timesheetFlatDTOs.size(), resourceId,
 				startDate, endDate);
-
+ 
 		if (timesheetFlatDTOs.isEmpty()) {
 			return new TimesheetDTO("", "", new ArrayList<>());
 		}
-
+ 
 		String projectName = timesheetFlatDTOs.get(0).projectName();
 		String finalProjectCode = timesheetFlatDTOs.get(0).projectCode();
-
+ 
 		List<ProjectTimeSheetDTO> timeSheets = timesheetFlatDTOs.stream()
 				.map(ts -> new ProjectTimeSheetDTO(ts.projectTimeSheet().date(), ts.projectTimeSheet().approvalStatus(),
 						ts.projectTimeSheet().attendanceStatus(), ts.projectTimeSheet().hoursWorked()))
 				.collect(Collectors.toList());
-
+ 
 		return new TimesheetDTO(finalProjectCode, projectName, timeSheets);
 	}
-
+ 
 	@Override
 	@Transactional
 	public void submitTimesheet(List<TimesheetDTO> timesheetDTOs, String resourceId) {
 		LocalDate startDate = getStartDate(timesheetDTOs);
 		LocalDate endDate = getEndDate(timesheetDTOs);
-
+ 
 		List<IdAndCodeDTO> allocationIdsForResourceAndProjects = resourceAllocationRepository
 				.fetchAllocationsIdForProjectCodeAndResourceId(
 						timesheetDTOs.stream().map(TimesheetDTO::projectCode).toList(), resourceId);
-
+ 
 		Map<Integer, String> idToCodeMap = allocationIdsForResourceAndProjects.stream()
 				.collect(Collectors.toMap(IdAndCodeDTO::id, IdAndCodeDTO::code));
-
+ 
 		Map<String, Integer> codeToIdMap = allocationIdsForResourceAndProjects.stream()
 				.collect(Collectors.toMap(IdAndCodeDTO::code, IdAndCodeDTO::id));
-
+ 
 		List<TimeSheet> existingTimeSheets = timeSheetRepository
 				.findByResourceAllocation_IdInAndDateBetweenAndEnabledTrue(
 						allocationIdsForResourceAndProjects.stream().map(IdAndCodeDTO::id).toList(), startDate,
 						endDate);
-
+ 
 		existingTimeSheets = existingTimeSheets.stream()
-				.filter(ts -> !ts.getApprovalStatus().equals(ApprovalStatus.APPROVED))
-				.collect(Collectors.toList());
+				.filter(ts -> !ts.getApprovalStatus().equals(ApprovalStatus.APPROVED)).collect(Collectors.toList());
 		log.info("Found {} existing timesheets for resource: {} between {} and {}", existingTimeSheets.size(),
 				resourceId, startDate, endDate);
 		log.info(existingTimeSheets.stream().map(ts -> "Project Code: "
@@ -236,33 +239,41 @@ public class TimesheetServiceImpl implements TimesheetService {
 		Map<String, Map<LocalDate, ProjectTimeSheetDTO>> timesheetMap = timesheetDTOs.stream()
 				.collect(Collectors.toMap(TimesheetDTO::projectCode, dto -> dto.projectTimeSheet().stream()
 						.collect(Collectors.toMap(ProjectTimeSheetDTO::date, Function.identity()))));
-
+ 
 		if (!existingTimeSheets.isEmpty()) {
 			for (TimeSheet existingTimeSheet : existingTimeSheets) {
 				String projectCode = idToCodeMap.get(existingTimeSheet.getResourceAllocation().getId());
 				existingTimeSheet.setEnabled(true);
-				existingTimeSheet.setApprovalStatus(ApprovalStatus.PENDING);
-				existingTimeSheet.setApproval(false);
+				existingTimeSheet.setApproval(false); // keep approval=false until manager approves
 				existingTimeSheet.setUpdatedBy(resourceId);
 				existingTimeSheet.setUpdatedAt(LocalDateTime.now());
-
+ 
 				if (!timesheetMap.containsKey(projectCode)
 						|| !timesheetMap.get(projectCode).containsKey(existingTimeSheet.getDate())) {
 					existingTimeSheet.setHours(BigDecimal.ZERO);
 					existingTimeSheet.setAttendanceStatus(false);
+					existingTimeSheet.setApprovalStatus(ApprovalStatus.PENDING); // No data = pending
 				} else {
 					ProjectTimeSheetDTO dto = timesheetMap.get(projectCode).get(existingTimeSheet.getDate());
+ 
 					existingTimeSheet.setHours(dto.hoursWorked());
 					existingTimeSheet.setAttendanceStatus(dto.attendanceStatus());
-
+ 
+					// **Respect status sent from frontend**
+					if (dto.approvalStatus() != null) {
+						existingTimeSheet.setApprovalStatus(dto.approvalStatus());
+					} else {
+						existingTimeSheet.setApprovalStatus(ApprovalStatus.PENDING);
+					}
+ 
 					// Remove matched entry so only new ones remain
 					timesheetMap.get(projectCode).remove(existingTimeSheet.getDate());
 				}
 			}
 		}
-
+ 
 		List<TimeSheet> timeSheets = new ArrayList<>(existingTimeSheets);
-
+ 
 		// Create new entries for remaining timesheet data
 		for (Map.Entry<String, Map<LocalDate, ProjectTimeSheetDTO>> entry : timesheetMap.entrySet()) {
 			String projectCode = entry.getKey();
@@ -271,12 +282,19 @@ public class TimesheetServiceImpl implements TimesheetService {
 			for (Map.Entry<LocalDate, ProjectTimeSheetDTO> innerEntry : entry.getValue().entrySet()) {
 				LocalDate date = innerEntry.getKey();
 				ProjectTimeSheetDTO projectTimesheetDTO = innerEntry.getValue();
-
+ 
 				TimeSheet newTimeSheet = new TimeSheet();
 				newTimeSheet.setDate(date);
 				newTimeSheet.setHours(projectTimesheetDTO.hoursWorked());
 				newTimeSheet.setAttendanceStatus(projectTimesheetDTO.attendanceStatus());
-				newTimeSheet.setApprovalStatus(ApprovalStatus.PENDING);
+ 
+				// Use approval status sent from frontend, fallback to PENDING
+				if (projectTimesheetDTO.approvalStatus() != null) {
+					newTimeSheet.setApprovalStatus(projectTimesheetDTO.approvalStatus());
+				} else {
+					newTimeSheet.setApprovalStatus(ApprovalStatus.PENDING);
+				}
+ 
 				newTimeSheet.setApproval(false);
 				newTimeSheet.setEnabled(true);
 				newTimeSheet.setCreatedAt(LocalDateTime.now());
@@ -284,74 +302,78 @@ public class TimesheetServiceImpl implements TimesheetService {
 				newTimeSheet.setUpdatedAt(LocalDateTime.now());
 				newTimeSheet.setUpdatedBy(resourceId);
 				newTimeSheet.setResourceAllocation(allocation);
-
+ 
 				timeSheets.add(newTimeSheet);
 			}
+ 
 		}
-
+ 
 		// Finally save all
 		timeSheetRepository.saveAll(timeSheets);
-		
-			List<TimesheetSubmissionEmailDTO> timesheetSubmissionEmailDTO = projectDetailsRepository.findTimesheetSubmissionEmailDetailsByProjectCode(timesheetDTOs.stream()
-					.map(TimesheetDTO::projectCode).distinct().toList());
-			emailService.sendTimesheetSubmissionEmailToManager(
-					timesheetSubmissionEmailDTO, 
-					"resourceEmail@gmail.com",
-					"resourceId",
-					"resourcePhoneNo",
-					"resource Name",
-					startDate, 
-					endDate);
+ 
+		List<TimesheetSubmissionEmailDTO> timesheetSubmissionEmailDTO = projectDetailsRepository
+				.findTimesheetSubmissionEmailDetailsByProjectCode(
+						timesheetDTOs.stream().map(TimesheetDTO::projectCode).distinct().toList());
+		emailService.sendTimesheetSubmissionEmailToManager(timesheetSubmissionEmailDTO, "resourceEmail@gmail.com",
+				"resourceId", "resourcePhoneNo", "resource Name", startDate, endDate);
 	}
-	
+ 
 	@Override
 	public void approval(TimesheetApprovalDTO timesheetApprovalDTO) {
-		 ApprovalStatus approvalStatus = timesheetApprovalDTO.approve()? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
-		IdAndCodeDTO allocationIdWithProjectCodeDTO =  resourceAllocationRepository.fetchAllocationsIdForSingleProjectCodeAndResourceId(timesheetApprovalDTO.projectId(), timesheetApprovalDTO.resourceId());
+		ApprovalStatus approvalStatus = timesheetApprovalDTO.approve() ? ApprovalStatus.APPROVED
+				: ApprovalStatus.REJECTED;
+		IdAndCodeDTO allocationIdWithProjectCodeDTO = resourceAllocationRepository
+				.fetchAllocationsIdForSingleProjectCodeAndResourceId(timesheetApprovalDTO.projectId(),
+						timesheetApprovalDTO.resourceId());
 		if (allocationIdWithProjectCodeDTO == null) {
-			throw new RecordNotFoundException("No allocation found for project code: " + timesheetApprovalDTO.projectId());
+			throw new RecordNotFoundException(
+					"No allocation found for project code: " + timesheetApprovalDTO.projectId());
 		}
 		String username = "ADMIN";
 		int rows = timeSheetRepository.approvetimesheetByAllocationIdAndDateAndEnabledTrue(
 				allocationIdWithProjectCodeDTO.id(), timesheetApprovalDTO.startDate(), timesheetApprovalDTO.endDate(),
 				timesheetApprovalDTO.approve(), approvalStatus, username);
-		
-		if(rows == 0) {
-			throw new RecordNotFoundException("No timesheet found for project code: " + timesheetApprovalDTO.projectId() + 
-					" and resource id: " + timesheetApprovalDTO.resourceId() + " between " + timesheetApprovalDTO.startDate() + " and " + timesheetApprovalDTO.endDate());
+ 
+		if (rows == 0) {
+			throw new RecordNotFoundException("No timesheet found for project code: " + timesheetApprovalDTO.projectId()
+					+ " and resource id: " + timesheetApprovalDTO.resourceId() + " between "
+					+ timesheetApprovalDTO.startDate() + " and " + timesheetApprovalDTO.endDate());
 		}
-		
-		else if(rows>0) {
-			
+ 
+		else if (rows > 0) {
+ 
 			try {
 				ResourceDetailsDTO resourceDetails = resourceAllocationRepository
 						.findDetailsFromAllocationId(allocationIdWithProjectCodeDTO.id());
-				
-				emailService.sendTimesheetApprovalEmailToResource(resourceDetails, timesheetApprovalDTO.resourceId(), timesheetApprovalDTO.startDate(), timesheetApprovalDTO.endDate(), timesheetApprovalDTO.projectId(), approvalStatus, "managerName", "managerEmail@gmail.com", "managerPhone");
-			}catch (jakarta.mail.MessagingException e) {
+ 
+				emailService.sendTimesheetApprovalEmailToResource(resourceDetails, timesheetApprovalDTO.resourceId(),
+						timesheetApprovalDTO.startDate(), timesheetApprovalDTO.endDate(),
+						timesheetApprovalDTO.projectId(), approvalStatus, "managerName", "managerEmail@gmail.com",
+						"managerPhone");
+			} catch (jakarta.mail.MessagingException e) {
 				log.error("Error sending timesheet approval email: {}", e.getMessage());
 			}
-			
+ 
 		}
-		
+ 
 	}
-
+ 
 	private LocalDate getStartDate(List<TimesheetDTO> timesheets) {
 		return timesheets.stream().flatMap(dto -> dto.projectTimeSheet().stream()).map(ProjectTimeSheetDTO::date)
 				.min(LocalDate::compareTo).orElse(null);
 	}
-
+ 
 	private LocalDate getEndDate(List<TimesheetDTO> timesheets) {
 		return timesheets.stream().flatMap(dto -> dto.projectTimeSheet().stream()).map(ProjectTimeSheetDTO::date)
 				.max(LocalDate::compareTo).orElse(null);
 	}
-
+ 
 	public DateRange getDateRange(List<TimesheetDTO> timesheets) {
 		LocalDate start = getStartDate(timesheets);
 		LocalDate end = getEndDate(timesheets);
 		return (start != null && end != null) ? new DateRange(start, end) : null;
 	}
-
+ 
 	// Optional record for returning both dates
-
+ 
 }

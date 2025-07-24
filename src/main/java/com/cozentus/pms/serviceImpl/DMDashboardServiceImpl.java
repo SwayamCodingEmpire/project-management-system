@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.config.UserAuthDetails;
 import com.cozentus.pms.dto.DMResourceStatsDTO;
+import com.cozentus.pms.dto.DMResourceStatsPartialDTO;
 import com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO;
 import com.cozentus.pms.dto.UtilizationBreakdownDTO;
 import com.cozentus.pms.helpers.Roles;
@@ -20,7 +21,10 @@ import com.cozentus.pms.repositories.UserInfoRepository;
 import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.DMDashboardService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class DMDashboardServiceImpl implements DMDashboardService {
 	
 	private final UserInfoRepository userInfoRepository;
@@ -104,6 +108,32 @@ public class DMDashboardServiceImpl implements DMDashboardService {
 
 	private BigDecimal defaultZero(BigDecimal input) {
 	    return input != null ? input : BigDecimal.ZERO;
+	}
+	
+	public DMResourceStatsDTO getResourceBillabilityStatsModified() {
+	    Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
+	    String empId = userAuthDetails.getRight().empId();
+	    Long globalZeroPlanned = userInfoRepository.getGlobalZeroPlannedUtilizationCount(Roles.RESOURCE);
+	    if (userAuthDetails.getLeft().equals(Roles.DELIVERY_MANAGER)) {
+	        DMResourceStatsPartialDTO dmStats = userInfoRepository.getResourceStatsDMSpecific(Roles.RESOURCE, empId);
+	        
+	        log.info("Global zero planned utilization count: {}", globalZeroPlanned);
+	        return new DMResourceStatsDTO(
+	            dmStats.totalBillability(),
+	            dmStats.totalResourceUsers(),
+	            dmStats.zeroOrNoBillabilityUsers(),
+	            globalZeroPlanned
+	        );
+	    }
+	    DMResourceStatsPartialDTO dmStats = userInfoRepository.getResourceStatsPMSpecific(Roles.RESOURCE, empId);
+        
+        log.info("Global zero planned utilization count: {}", globalZeroPlanned);
+        return new DMResourceStatsDTO(
+            dmStats.totalBillability(),
+            dmStats.totalResourceUsers(),
+            dmStats.zeroOrNoBillabilityUsers(),
+            globalZeroPlanned
+        );
 	}
 	
 	

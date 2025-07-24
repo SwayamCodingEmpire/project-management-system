@@ -16,8 +16,11 @@ import com.cozentus.pms.dto.ProjectTypeSummaryDTO;
 import com.cozentus.pms.entites.ProjectType;
 import com.cozentus.pms.services.ProjectTypeService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/project-type")
+@Slf4j
 public class ProjectTypeController {
 
     private final ProjectTypeService projectTypeService;
@@ -38,6 +41,7 @@ public class ProjectTypeController {
     @PutMapping("/{id}")
     public ResponseEntity<ProjectType> updateProjectType(@PathVariable Integer id,
                                                          @RequestBody ProjectType updatedType) {
+    	log.info("Updating ProjectType :{}", updatedType);
         ProjectType updated = projectTypeService.update(id, updatedType);
         return ResponseEntity.ok(updated);
     }

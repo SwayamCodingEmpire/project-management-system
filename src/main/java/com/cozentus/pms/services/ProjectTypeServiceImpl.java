@@ -24,7 +24,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
 	@Override
 	public List getAllProjectTypeSummaries() {
 		return projectTypeRepository.findAll().stream()
-				.map(pt -> new ProjectTypeSummaryDTO(pt.getId(), pt.getProjectType(), pt.isCustomerProject() // Fixed
+				.map(pt -> new ProjectTypeSummaryDTO(pt.getId(), pt.getProjectType(), pt.getIsCustomerProject() // Fixed
 																												// line
 				)).collect(Collectors.toList());
 	}
@@ -35,7 +35,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
 				.orElseThrow(() -> new RuntimeException("ProjectType not found"));
 
 		existing.setProjectType(updatedType.getProjectType());
-		existing.setCustomerProject(updatedType.isCustomerProject());
+		existing.setIsCustomerProject(updatedType.getIsCustomerProject());
 		return projectTypeRepository.save(existing);
 	}
 }

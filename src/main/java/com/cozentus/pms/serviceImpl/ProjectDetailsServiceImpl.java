@@ -15,6 +15,7 @@ import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.MailNotificationConfigDTO;
 import com.cozentus.pms.dto.ProjectDTO;
 import com.cozentus.pms.dto.ProjectDashboardDTO;
+import com.cozentus.pms.dto.ProjectDashboardRoundedDTO;
 import com.cozentus.pms.dto.ProjectDetailsForProjectListDTO;
 import com.cozentus.pms.dto.ProjectManagerProjectCountDTO;
 import com.cozentus.pms.dto.ProjectMinimalDataDTO;
@@ -170,7 +171,7 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		ProjectDetails projectDetails = projectDetailsRepository.findByProjectCode(code).orElseThrow(() -> new RecordNotFoundException("Project not found"));;
 		Client client;
 		if(!projectDTO.projectType().customerProject()) {
-			client = entityManager.getReference(Client.class, 31);
+			client = entityManager.getReference(Client.class, projectDetails.getCustomer().getId());
 		}
 		else if (projectDTO.customerInfo().id() != null) {
 			if (!clientRepository.existsById(projectDTO.customerInfo().id())) {
@@ -195,7 +196,7 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		}
 		UserInfo manager = entityManager.getReference(UserInfo.class, managerDTO.id());
 		projectDetails.setProjectManager(manager);
-		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, 32);
+		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, managerDTO.id());
 		projectDetails.setDeliveryManager(deliveryManager);	
 		credentialRepository.updateRoleByUserId(managerDTO.id(), Roles.PROJECT_MANAGER);
 		projectDetailsRepository.saveAndFlush(projectDetails);
@@ -283,20 +284,23 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 	
 	@Override
 	public List<ProjectDashboardDTO> getDashboardData(Integer managerId, Roles role) {
-		
-		List<ProjectDashboardDTO> dashboardData;
-		if(role.equals(Roles.DELIVERY_MANAGER)) {
-	    dashboardData = projectDetailsRepository.findAllDashboardData(managerId);
-		} else {
-			dashboardData = projectDetailsRepository.getPmDashboardProjectListByManager(managerId);
-		}
-	    
+	    List<ProjectDashboardDTO> dashboardData;
+
+	    if (role.equals(Roles.DELIVERY_MANAGER)) {
+	        dashboardData = projectDetailsRepository.findAllDashboardData(managerId);
+	    } else {
+	        dashboardData = projectDetailsRepository.getPmDashboardProjectListByManager(managerId);
+	    }
+
 	    if (dashboardData.isEmpty()) {
 	        throw new RecordNotFoundException("No dashboard data found for delivery manager ID: " + managerId);
 	    }
 
-	    return dashboardData;
+	    return dashboardData.stream()
+	        .map(ProjectDashboardRoundedDTO::new)
+	        .collect(Collectors.toList());
 	}
+
 	
 	public List<ProjectManagerProjectCountDTO> getProjectManagersUnderManager(String dmEmpId) {
 //		String dmEmpId = "CZ0433"; // Replace with actual delivery manager employee ID

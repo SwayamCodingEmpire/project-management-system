@@ -2,6 +2,8 @@ package com.cozentus.pms.entites;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
@@ -21,6 +24,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "projectType")
+@ToString
 public class ProjectType {
 
     @Id
@@ -31,8 +35,10 @@ public class ProjectType {
     private String projectType;
 
     @Column(name = "is_customer_project", nullable = false)
-    private boolean isCustomerProject;
+    private Boolean isCustomerProject;
 
-    @OneToMany(mappedBy = "projectType", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @ToString.Exclude
+    @OneToMany(mappedBy = "projectType", cascade = CascadeType.ALL)
     private List<ProjectDetails> projectDetails;
 }
