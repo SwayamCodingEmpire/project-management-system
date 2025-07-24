@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -368,7 +369,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	}
 	
 	@Override
-	public List<ResourceBasics> getAllResourceSkillLevel() {
+	public Set<ResourceBasics> getAllResourceSkillLevel() {
 	    return userInfoRepository.findAllResourceSkillLevel();
 	}
 

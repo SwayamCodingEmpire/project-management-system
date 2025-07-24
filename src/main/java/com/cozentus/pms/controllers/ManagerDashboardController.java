@@ -1,8 +1,10 @@
 package com.cozentus.pms.controllers;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
@@ -113,7 +115,15 @@ public class ManagerDashboardController {
 
 	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, empId, null);
 
-	    List<ResourceBasics> skillResourceDetails = userInfoService.getAllResourceSkillLevel();
+	    Set<ResourceBasics> skillResourceDetails = new HashSet<>();
+	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
+	    	skillResourceDetails = userInfoService.getAllResourceSkillLevel();
+
+	    }
+	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
+	    //Write the logic here
+	    }
+	    
 
 
 	    List<ProjectDashboardDTO> projectDetails = projectDetailsService.getDashboardData(userId, role);

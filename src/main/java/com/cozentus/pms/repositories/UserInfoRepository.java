@@ -500,7 +500,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			       "FROM UserSkillDetail usd " +
 			       "JOIN usd.user u " +
 			       "JOIN usd.skill s")
-			List<ResourceBasics> findAllResourceSkillLevel();
+			Set<ResourceBasics> findAllResourceSkillLevel();
 		
 		
 		@Query("""

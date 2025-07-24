@@ -1,6 +1,7 @@
 package com.cozentus.pms.services;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public interface UserInfoService {
 	void addSkillToResources(String empId, String skillName, SkillUpsertDTO skillUpsertDTO);
 	List<String> getAllSkills();
 	void deleteSkillFromResource(String empId, String skillName);
-	List<ResourceBasics> getAllResourceSkillLevel();
+	Set<ResourceBasics> getAllResourceSkillLevel();
 	
 
 }
