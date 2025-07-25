@@ -138,6 +138,7 @@ public class ManagerDashboardController {
 	        projectsByPm.put(pmEmpId, pmProjects);
 	    }
  
+	    log.info(skillResourceDetails.toString());
 	    ManagerDashboardExportDTO exportDTO = new ManagerDashboardExportDTO(
 	        kpi, skillCounts, skillResourceDetails, projectDetails, projectCount, projectsByPm
 	    );

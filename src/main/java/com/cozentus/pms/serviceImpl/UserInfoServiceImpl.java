@@ -258,6 +258,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	
 	
 	public List<ResourceBasicDTO> getAllResourcesAccordingToSkillsAndLevels(String skillName, String level, String search) {
+		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
 		Roles role = authenticationService.getCurrentUserDetails().getLeft();
 		log.info("Fetching resources with skill: {}, level: {}, search: {}", skillName, level, search);
 		List<ResourceBasicDTO> resourceList = new ArrayList<>();
@@ -265,16 +266,17 @@ public class UserInfoServiceImpl implements UserInfoService {
 			if (search != null && !search.isBlank()) {
 				List<String> empIds = gptSkillNormalizerService
 						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsByEmpId(skillName, level, empIds);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsByEmpId(skillName, level, empIds, empId);
+				log.info(resourceList.toString());	
 			}
 			else {
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level, empId);
 				
 			}
 	    
 		}
 		else {
-			String empId = authenticationService.getCurrentUserDetails().getRight().empId();
+
 			if (search != null && !search.isBlank()) {
 				List<String> empIds = gptSkillNormalizerService
 						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
@@ -375,7 +377,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	
 	@Override
 	public Set<ResourceBasics> getSkillsForDM(String dmEmpId) {
-        return userInfoRepository.findAllResourceSkillLevelForDM(dmEmpId);
+        return userInfoRepository.findAllResourceSkillLevel();
  
 	}
 	@Override

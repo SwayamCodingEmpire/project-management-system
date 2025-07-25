@@ -29,9 +29,20 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 	@Query("SELECT new com.cozentus.pms.dto.IdAndCodeDTO(s.id, s.skillName) FROM Skill s WHERE s.skillName = :skillName")
 	Optional<IdAndCodeDTO> findIdAndNameBySkillsName(String skillName);
 	
-	@Query("SELECT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(s.skillName, u.empId, usd.level) " +
-		   "FROM UserSkillDetail usd JOIN usd.skill s JOIN usd.user u WHERE usd.level IS NOT NULL")
-	List<UserSkillDetailsWithNameDTO> findAllSkillsWithNames();
+	@Query("""
+		    SELECT DISTINCT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(
+		        s.skillName, u.empId, usd.level
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    JOIN usd.user u
+		    JOIN u.allocations a
+		    WHERE usd.level IS NOT NULL
+		      AND a.project.deliveryManager.empId = :empId
+		      AND a.allocationCompleted = false
+		""")
+
+		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNames(String empId);
 	
 
 	
@@ -90,9 +101,25 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 	void deleteSkillFromUserDetailSkill(String empId, String skillName);
 	
 	
-	@Query("SELECT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(s.skillName, u.empId, usd.level) " +
-			   "FROM UserSkillDetail usd JOIN usd.skill s JOIN usd.user u WHERE usd.level IS NOT NULL AND u.empId IN :empIds")
-		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(List<String> empIds);
+//	@Query("SELECT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(s.skillName, u.empId, usd.level) " +
+//			   "FROM UserSkillDetail usd JOIN usd.skill s JOIN usd.user u WHERE usd.level IS NOT NULL AND u.empId IN :empIds")
+//		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(List<String> empIds);
+	
+	@Query("""
+		    SELECT DISTINCT new com.cozentus.pms.dto.UserSkillDetailsWithNameDTO(
+		        s.skillName, u.empId, usd.level
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    JOIN usd.user u
+		    JOIN u.allocations a
+		    WHERE usd.level IS NOT NULL
+		      AND a.project.deliveryManager.empId = :empId
+		      AND a.allocationCompleted = false
+		      AND u.empId IN :empIds
+		""")
+
+		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(String empId, List<String> empIds);
 	
 	
 	

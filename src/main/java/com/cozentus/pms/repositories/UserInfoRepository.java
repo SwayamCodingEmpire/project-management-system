@@ -430,9 +430,10 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND s.skillName = :skillName 
 			          AND usd.level = :level 
 			    )  
+			    AND a.project.deliveryManager.empId = :empId
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
-			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevels(String skillName, String level);
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevels(String skillName, String level, String empId);
 		
 		
 		@Query("""
@@ -472,9 +473,10 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND usd.level = :level 
 			          AND usd.user.empId IN :empId
 			    )  
+			    AND a.project.deliveryManager.empId IN :dmEmpId
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
-			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId) ;
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId, String dmEmpId); ;
 		
 		
 		
@@ -551,12 +553,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 				""")
 				DMResourceStatsPartialDTO getResourceStatsPMSpecific(Roles resourceRole, String empId);
 		
-		@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +
-			       "FROM UserSkillDetail usd " +
-			       "JOIN usd.user u " +
-			       "JOIN usd.skill s " +
-			       "WHERE u.reportingManager.empId = :dmEmpId")
-			Set<ResourceBasics> findAllResourceSkillLevelForDM(String dmEmpId);
+
+
+
 	 
 			// 2. PM ke resources ke liye
 			@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +

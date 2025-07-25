@@ -44,7 +44,7 @@ public class SkillServiceImpl implements SkillService {
 	    if (role.equals(Roles.DELIVERY_MANAGER)) {
 	        boolean isSearchEmpty = search == null || search.isBlank();
 	        if (isSearchEmpty) {
-	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames();
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames(empId);
 	            empIdOrderMap = null;
 	        } else {
 	            log.info("Searching for skills with search term: {}", search);
@@ -56,7 +56,7 @@ public class SkillServiceImpl implements SkillService {
 	                .boxed()
 	                .collect(Collectors.toMap(empIds::get, i -> i));
 
-	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesWithCertainEmpIds(empIds);
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesWithCertainEmpIds(empId, empIds);
 	        }
 	    } else {
 	        boolean isSearchEmpty = search == null || search.isBlank();
