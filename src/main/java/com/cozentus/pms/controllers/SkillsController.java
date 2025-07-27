@@ -23,7 +23,7 @@ public class SkillsController {
 	    if (skillName == null || skillName.trim().isEmpty()) {
 	        return ResponseEntity.badRequest().body("Skill name must not be blank.");
 	    }
-		skillService.createNewSkill(skillName.toUpperCase());
+		skillService.createNewSkill(skillName.toUpperCase().trim());
 		return ResponseEntity.ok("Skill updated successfully.");
 	}
 	
@@ -38,7 +38,7 @@ public class SkillsController {
 	    else if (oldSkillName.equalsIgnoreCase(newSkillName)) {
 	        return ResponseEntity.badRequest().body("New skill name must be different from the old skill name.");
 	    }
-		skillService.updateSkill(oldSkillName, newSkillName.toUpperCase());
+		skillService.updateSkill(oldSkillName, newSkillName.toUpperCase().trim());
 		return ResponseEntity.ok("Skill updated successfully.");
 	}
 	

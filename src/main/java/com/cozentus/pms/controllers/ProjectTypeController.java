@@ -29,6 +29,7 @@ public class ProjectTypeController {
     // ✅ Create new ProjectType
     @PostMapping
     public ResponseEntity<ProjectType> saveProjectType(@RequestBody ProjectType projectType) {
+    	projectType.setProjectType(projectType.getProjectType().trim());
         ProjectType saved = projectTypeService.save(projectType);
         return ResponseEntity.ok(saved);
     }
