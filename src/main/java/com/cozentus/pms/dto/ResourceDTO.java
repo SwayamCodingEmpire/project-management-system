@@ -2,6 +2,8 @@ package com.cozentus.pms.dto;
 
 import java.util.List;
 
+import com.cozentus.pms.helpers.Roles;
+
 
 
 public record ResourceDTO(
@@ -16,6 +18,9 @@ public record ResourceDTO(
 	    String role,
 	    String reportingManagerId,
 	    String reportingManagerName,
+	    String deliveryManagerEmpId,
+	    String deliveryManagerName,
+	    Roles resourceRole,
 	    List<ProjectAllocationDTO> allocation
 	) {}
 

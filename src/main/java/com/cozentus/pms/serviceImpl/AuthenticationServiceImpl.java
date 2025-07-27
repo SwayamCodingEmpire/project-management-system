@@ -15,6 +15,7 @@ import com.cozentus.pms.config.CustomAuthDetails;
 import com.cozentus.pms.config.UserAuthDetails;
 import com.cozentus.pms.dto.LoginDTO;
 import com.cozentus.pms.dto.LoginResponseDTO;
+import com.cozentus.pms.dto.NameAndEmpId;
 import com.cozentus.pms.helpers.Roles;
 import com.cozentus.pms.repositories.UserInfoRepository;
 import com.cozentus.pms.services.AuthenticationService;
@@ -53,11 +54,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .getAuthority();
 
             // Convert string to enum
-            String name = userInfoRepository.findNameByUsername(loginDTO.username())
+            NameAndEmpId nameAndEmpId = userInfoRepository.findNameByUsername(loginDTO.username())
 				.orElseThrow(() -> new IllegalStateException("User not found"));
             Roles role = Roles.valueOf(roleStr.substring(5));
 
-            LoginResponseDTO loginResponse = new LoginResponseDTO(jwtToken, role, name);
+            LoginResponseDTO loginResponse = new LoginResponseDTO(jwtToken, role, nameAndEmpId.name(), nameAndEmpId.empId());
             return loginResponse;
         } else {
             throw new IllegalStateException("User is Invalid");

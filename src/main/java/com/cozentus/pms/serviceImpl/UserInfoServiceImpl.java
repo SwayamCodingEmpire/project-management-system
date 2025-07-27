@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cozentus.pms.dto.ConvertedSkills;
+import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.ProjectAllocationDTO;
 import com.cozentus.pms.dto.ProjectManagerDTO;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
@@ -162,6 +163,8 @@ public class UserInfoServiceImpl implements UserInfoService {
 	                            resourceFlatDTO.designation(),
 	                            resourceFlatDTO.experience().doubleValue(), resourceFlatDTO.role(),
 	                            resourceFlatDTO.reportingManagerId(), resourceFlatDTO.reportingManagerName(),
+	                            resourceFlatDTO.deliveryManagerEmpId(), resourceFlatDTO.deliveryManagerName(),
+	                            resourceFlatDTO.resourceRole(),
 	                            new ArrayList<>());
 	                });
 	        
@@ -207,7 +210,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 		Credential credential = new Credential();
 		credential.setUsername(resourceDTO.emailId());
 		credential.setPassword(bCryptPasswordEncoder.encode("C0Z1234")); // Set a default password or handle it as needed
-		credential.setRole(Roles.RESOURCE);
+		credential.setRole(resourceDTO.resourceRole());
 		credential.setEnabled(true);
 		userInfoRepository.save(userInfo);
 	}
@@ -216,8 +219,10 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@Caching(evict = { @CacheEvict(value = "resources", allEntries = true),
 	@CacheEvict(value = "reportingManagers", key = "'allReportingManagers'") })
 	public void updateResource(ResourceEditDTO resourceEditDTO) {
-
-		int updateCount = userInfoRepository.updateSkillsByEmpId(resourceEditDTO.id(), resourceEditDTO.role());
+		IdAndCodeDTO idAndCodeDTO = userInfoRepository.findIdAndEmpIdByEmpId(resourceEditDTO.reportingManager()).orElseThrow(() -> new RecordNotFoundException("Resource not found with empId: " + resourceEditDTO.id()));
+		UserInfo userInfo = entityManager.getReference(UserInfo.class, idAndCodeDTO.id()); 
+		int updateCount = userInfoRepository.updateResourceByEmpId(resourceEditDTO.id(), resourceEditDTO.role(), resourceEditDTO.designation(), 
+				resourceEditDTO.experience(),userInfo);
 		
 
 		if (updateCount == 0) {
@@ -262,31 +267,18 @@ public class UserInfoServiceImpl implements UserInfoService {
 		Roles role = authenticationService.getCurrentUserDetails().getLeft();
 		log.info("Fetching resources with skill: {}, level: {}, search: {}", skillName, level, search);
 		List<ResourceBasicDTO> resourceList = new ArrayList<>();
-		if (role.equals(Roles.DELIVERY_MANAGER)) {
 			if (search != null && !search.isBlank()) {
 				List<String> empIds = gptSkillNormalizerService
 						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsByEmpId(skillName, level, empIds, empId);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsByEmpId(skillName, level, empIds);
 				log.info(resourceList.toString());	
 			}
 			else {
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level, empId);
+				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevels(skillName, level);
 				
 			}
 	    
-		}
-		else {
 
-			if (search != null && !search.isBlank()) {
-				List<String> empIds = gptSkillNormalizerService
-						.normalizeSkillSingle(new UserSkillDTO("EMP123", List.of(search)), 20);
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsforPMByEmpIdIn(skillName, level, empId, empIds);
-			}
-			else {
-				resourceList = userInfoRepository.findAllResourcesWithSkillsAndLevelsforPM(skillName, level, empId);
-				
-			}
-		}
 		
 	    if (resourceList.isEmpty()) {
 	        throw new RecordNotFoundException("No resources found with skill: " + skillName + " and level: " + level);

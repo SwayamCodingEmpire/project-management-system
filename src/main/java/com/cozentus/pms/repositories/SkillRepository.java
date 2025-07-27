@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cozentus.pms.dto.IdAndCodeDTO;
+import com.cozentus.pms.dto.SkillCountByNameDTO;
 import com.cozentus.pms.dto.SkillExperienceDTO;
 import com.cozentus.pms.dto.UserSkillDetailsWithNameDTO;
 import com.cozentus.pms.entites.Skill;
@@ -38,13 +39,9 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 		    JOIN usd.user u
 		    JOIN u.allocations a
 		    WHERE usd.level IS NOT NULL
-		      AND a.project.deliveryManager.empId = :empId
 		      AND a.allocationCompleted = false
 		""")
-
-		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNames(String empId);
-	
-
+		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNames();
 	
 	
 	@Query("""
@@ -114,12 +111,11 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 		    JOIN usd.user u
 		    JOIN u.allocations a
 		    WHERE usd.level IS NOT NULL
-		      AND a.project.deliveryManager.empId = :empId
 		      AND a.allocationCompleted = false
 		      AND u.empId IN :empIds
 		""")
 
-		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(String empId, List<String> empIds);
+		List<UserSkillDetailsWithNameDTO> findAllSkillsWithNamesWithCertainEmpIds(List<String> empIds);
 	
 	
 	
@@ -132,6 +128,37 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 	@Modifying
 	@Query("DELETE FROM Skill s WHERE s.skillName = :skillName")
 	int deleteBySkillName(String skillName);
+	
+	@Query("""
+		    SELECT new com.cozentus.pms.dto.SkillCountByNameDTO(
+		        s.skillName, COUNT(DISTINCT u.empId)
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    JOIN usd.user u
+		    WHERE u.deliveryManager.empId = :dmEimpId 
+		    AND usd.level IS NOT NULL 
+		    AND u.enabled = true
+		    GROUP BY s.skillName
+		    ORDER BY COUNT(DISTINCT u.empId) DESC
+		""")
+		List<SkillCountByNameDTO> findSkillCountByName(String dmEimpId);
+	
+	@Query("""
+		    SELECT new com.cozentus.pms.dto.SkillCountByNameDTO(
+		        s.skillName, COUNT(DISTINCT u.empId)
+		    )
+		    FROM UserSkillDetail usd
+		    JOIN usd.skill s
+		    JOIN usd.user u
+		    WHERE u.deliveryManager.empId = (SELECT u.deliveryManager.empId FROM UserInfo u WHERE u.empId = :pmEMpId)
+		    AND usd.level IS NOT NULL 
+		    AND u.enabled = true
+		    GROUP BY s.skillName
+		    ORDER BY COUNT(DISTINCT u.empId) DESC
+		""")
+		List<SkillCountByNameDTO> findSkillCountByNameForPM(String pmEMpId);
+
 	
 
 

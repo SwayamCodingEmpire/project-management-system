@@ -2,6 +2,7 @@ package com.cozentus.pms.serviceImpl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.config.UserAuthDetails;
+import com.cozentus.pms.dto.BenchResourceDTO;
 import com.cozentus.pms.dto.DMResourceStatsDTO;
 import com.cozentus.pms.dto.DMResourceStatsPartialDTO;
 import com.cozentus.pms.dto.ResourceProjectUtilizationSummaryDTO;
@@ -41,7 +43,14 @@ public class DMDashboardServiceImpl implements DMDashboardService {
 		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
 		String dmEmpId = userAuthDetails.getRight().empId();
 		if (userAuthDetails.getLeft().equals(Roles.DELIVERY_MANAGER)) {
-			return userInfoRepository.getResourceStatsCombined(Roles.RESOURCE, dmEmpId);
+			long benchCount = resourceAllocationRepository.findBenchResourcesCount(dmEmpId, Roles.RESOURCE);
+			DMResourceStatsDTO dmResourceStatsDTO =  userInfoRepository.getResourceStatsCombined(Roles.RESOURCE, dmEmpId);
+			return new DMResourceStatsDTO(
+				dmResourceStatsDTO.totalBillability(),
+				dmResourceStatsDTO.totalResourceUsers(),
+				dmResourceStatsDTO.zeroOrNoBillabilityUsers(),
+				benchCount
+			);
 		}
 		String empId = userAuthDetails.getRight().empId();
 		return userInfoRepository.getResourceStatsCombinedForPM(Roles.RESOURCE,empId);
@@ -134,6 +143,23 @@ public class DMDashboardServiceImpl implements DMDashboardService {
             dmStats.zeroOrNoBillabilityUsers(),
             globalZeroPlanned
         );
+	}
+	
+	@Override
+	public List<BenchResourceDTO> getNonUnitilizedResources() {
+		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
+		String empId = userAuthDetails.getRight().empId();
+		Roles role = userAuthDetails.getLeft();
+	    return resourceAllocationRepository.findBenchResourcesWithLastDate(empId, Roles.RESOURCE)
+	            .stream()
+	            .map(benchResource -> new BenchResourceDTO(
+	                    benchResource.id(),
+	                    benchResource.name(),
+	                    benchResource.previousProject(),
+	                    (int) (LocalDate.now().toEpochDay() - benchResource.date().toEpochDay())  // renamed `lastDate()` to `date()` as per your record
+	            ))
+	            .collect(Collectors.toList());
+
 	}
 	
 	

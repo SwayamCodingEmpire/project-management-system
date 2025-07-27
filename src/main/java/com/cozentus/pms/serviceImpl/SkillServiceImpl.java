@@ -1,10 +1,12 @@
 package com.cozentus.pms.serviceImpl;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -12,6 +14,7 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 
 import com.cozentus.pms.dto.LevelCount;
+import com.cozentus.pms.dto.SkillCountByNameDTO;
 import com.cozentus.pms.dto.SkillCountDTO;
 import com.cozentus.pms.dto.UserSkillDTO;
 import com.cozentus.pms.dto.UserSkillDetailsWithNameDTO;
@@ -30,51 +33,43 @@ public class SkillServiceImpl implements SkillService {
 	private final SkillRepository skillRepository;
 	private final GptSkillNormalizerService gptSkillNormalizerService;
 	
+	
 	public SkillServiceImpl(SkillRepository skillRepository, GptSkillNormalizerService gptSkillNormalizerService) {
 		this.skillRepository = skillRepository;
 		this.gptSkillNormalizerService = gptSkillNormalizerService;
 	}
 	
 	
-	public List<SkillCountDTO> getSkillCounts(Roles role, String empId, String search) {
+	public List<SkillCountDTO> getSkillCounts(Roles role, String search, String dmEmpId) {
 	    List<UserSkillDetailsWithNameDTO> userSkillDetailsWithNameDTOs;
-	    final Map<String, Integer> empIdOrderMap;
+	    Map<String, Integer> empIdOrderMap;
 	    Map<String, String> skillToFirstEmpId = new HashMap<>();
-
-	    if (role.equals(Roles.DELIVERY_MANAGER)) {
+	    List<SkillCountByNameDTO> skillCountByNameDTOs = new ArrayList<>();
 	        boolean isSearchEmpty = search == null || search.isBlank();
 	        if (isSearchEmpty) {
-	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames(empId);
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNames();
 	            empIdOrderMap = null;
+	            if(role.equals(Roles.DELIVERY_MANAGER)) {
+	                log.info("Fetching skill counts for DM: {}", dmEmpId);
+	                skillCountByNameDTOs = skillRepository.findSkillCountByName(dmEmpId);
+	            } else {
+	                log.info("Fetching skill counts for PM: {}", dmEmpId);
+		            skillCountByNameDTOs = skillRepository.findSkillCountByName(dmEmpId);
+	            }
+	                // Assuming PMs can also fetch skill counts by DM empId
+
 	        } else {
 	            log.info("Searching for skills with search term: {}", search);
 	            List<String> empIds = gptSkillNormalizerService
-	                .normalizeSkillSingle(new UserSkillDTO(empId, List.of(search)), 20);
+	                .normalizeSkillSingle(new UserSkillDTO("EMP124", List.of(search)), 20);
 	            log.info("Normalized employee IDs: {}", empIds);
 
 	            empIdOrderMap = IntStream.range(0, empIds.size())
 	                .boxed()
 	                .collect(Collectors.toMap(empIds::get, i -> i));
 
-	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesWithCertainEmpIds(empId, empIds);
+	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesWithCertainEmpIds(empIds);
 	        }
-	    } else {
-	        boolean isSearchEmpty = search == null || search.isBlank();
-	        if (isSearchEmpty) {
-	            userSkillDetailsWithNameDTOs = skillRepository.findAllSkillsWithNamesForPM(empId);
-	            empIdOrderMap = null;
-	        } else {
-	            List<String> empIds = gptSkillNormalizerService
-	                .normalizeSkillSingle(new UserSkillDTO(empId, List.of(search)), 200);
-
-	            empIdOrderMap = IntStream.range(0, empIds.size())
-	                .boxed()
-	                .collect(Collectors.toMap(empIds::get, i -> i));
-
-	            userSkillDetailsWithNameDTOs = skillRepository
-	                .findAllSkillsWithNamesForPMForCertainEmpIds(empId, empIds);
-	        }
-	    }
 
 	    Map<String, Set<String>> totalUsersBySkill = new HashMap<>();
 	    Map<String, Map<String, Set<String>>> levelWiseUsersBySkill = new HashMap<>();
@@ -118,6 +113,24 @@ public class SkillServiceImpl implements SkillService {
 	            return empIdOrderMap.getOrDefault(firstEmpId, Integer.MAX_VALUE);
 	        }));
 	    }
+	    
+	    else {
+	        Map<String, Integer> countMap = Optional.ofNullable(skillCountByNameDTOs)
+	            .orElse(List.of())
+	            .stream()
+	            .filter(dto -> dto != null && dto.name() != null && !dto.name().isBlank())
+	            .collect(Collectors.toMap(
+	                SkillCountByNameDTO::name,
+	                dto -> (int) dto.totalCount(),
+	                (a, b) -> Math.max(a, b)
+	            ));
+
+	        skillCounts.sort(Comparator
+	            .comparingInt((SkillCountDTO dto) ->
+	                countMap.getOrDefault(dto.name(), Integer.MIN_VALUE)
+	            ).reversed());
+	    }
+
 
 	    return skillCounts;
 	}

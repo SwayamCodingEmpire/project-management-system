@@ -25,5 +25,6 @@ public interface ResourceAllocationService {
 	 ResourceWeeklySummaryDTO getResourceProjectCountAndWeeklyHours();
 	 List<UtilizationPairDTO> getResourceDashboardUtilStats(String empId, LocalDate startDate, LocalDate endDate);
 	 void dellocateResource(String projectId, String empId);
-
+	 void deallocateResourceFromDM(String resourceEmpId, Integer deliveryManagerId);
+	 void allocateToDM(String resourceEmpId, Integer deliveryManagerId);
 }

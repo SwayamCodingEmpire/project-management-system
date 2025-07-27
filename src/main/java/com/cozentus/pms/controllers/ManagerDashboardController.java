@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cozentus.pms.config.UserAuthDetails;
+import com.cozentus.pms.dto.BenchResourceDTO;
 import com.cozentus.pms.dto.KeyPerformanceIndicatorsDTO;
 import com.cozentus.pms.dto.ManagerDashboardExportDTO;
 import com.cozentus.pms.dto.ProjectDashboardDTO;
@@ -65,7 +66,7 @@ public class ManagerDashboardController {
 		Roles role = userAuthDetails.getLeft();
 		String empId = userAuthDetails.getRight().empId();
 		log.info("Fetching skill counts for role: {}, empId: {}, search: {}", role, empId, search);
-		List<SkillCountDTO> sk = skillServiceImpl.getSkillCounts(role, empId, search);
+		List<SkillCountDTO> sk = skillServiceImpl.getSkillCounts(role, search, empId);
 		log.info("Fetched {} skill counts", sk.size());
 		log.info(sk.toString());
 			return ResponseEntity.ok(sk);
@@ -113,7 +114,7 @@ public class ManagerDashboardController {
 	        dmDashboardService.computeUtilizationBreakdown()
 	    );
  
-	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, empId, null);
+	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, null, empId);
  
 	    Set<ResourceBasics> skillResourceDetails = new HashSet<>();
 	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
@@ -144,6 +145,11 @@ public class ManagerDashboardController {
 	    );
  
 	    return ResponseEntity.ok(exportDTO);
+	}
+	
+	@GetMapping("/bench-resources")
+	public ResponseEntity<List<BenchResourceDTO>> getBenchResources() {
+		return ResponseEntity.ok(dmDashboardService.getNonUnitilizedResources());
 	}
 	
 	

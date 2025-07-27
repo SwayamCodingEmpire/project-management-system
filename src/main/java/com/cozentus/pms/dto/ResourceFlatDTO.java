@@ -1,7 +1,8 @@
 package com.cozentus.pms.dto;
 
 import java.math.BigDecimal;
-import java.util.List;
+
+import com.cozentus.pms.helpers.Roles;
 
 public record ResourceFlatDTO( 
 	    String id,
@@ -13,5 +14,8 @@ public record ResourceFlatDTO(
 	    String role,
 	    String reportingManagerId,
 	    String reportingManagerName,
+	    String deliveryManagerEmpId,
+	    String deliveryManagerName,
+	    Roles resourceRole,
 	    ProjectAllocationDTO allocation 
 	) {}

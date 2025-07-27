@@ -1,5 +1,6 @@
 package com.cozentus.pms.repositories;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,12 +10,12 @@ import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cozentus.pms.dto.DMResourceStatsDTO;
 import com.cozentus.pms.dto.DMResourceStatsPartialDTO;
 import com.cozentus.pms.dto.IdAndCodeDTO;
+import com.cozentus.pms.dto.NameAndEmpId;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
 import com.cozentus.pms.dto.ProjectTimesheetForEmailDTO;
 import com.cozentus.pms.dto.ReportingManagerDTO;
@@ -34,8 +35,8 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 	@Query("SELECT u FROM UserInfo u LEFT JOIN u.credential c WHERE c.enabled = true AND c.username = :username")
 	Optional<UserInfo> findByUsernameAndEnabledTrue(String username);
 	
-	@Query("SELECT u.name FROM UserInfo u LEFT JOIN u.credential c WHERE c.enabled = true AND c.username = :username")
-	Optional<String> findNameByUsername(String username);
+	@Query("SELECT new com.cozentus.pms.dto.NameAndEmpId(u.name, u.empId) FROM UserInfo u LEFT JOIN u.credential c WHERE c.enabled = true AND c.username = :username")
+	Optional<NameAndEmpId> findNameByUsername(String username);
 	
 	List<UserInfo> findByEmpIdIn(Set<String> empIds);
 
@@ -78,6 +79,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		        e.role,
 		        rm.empId,
 		        rm.name,
+		        dm.empId,
+		        dm.name,
+		        c.role,
 		        new com.cozentus.pms.dto.ProjectAllocationDTO(
 		            p.projectCode,
 		            p.projectName,
@@ -98,6 +102,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    LEFT JOIN p.projectManager pm 
 		        ON pm.enabled = true
 		    LEFT JOIN p.projectType pt
+		    LEFT JOIN e.deliveryManager dm
 		    WHERE e.enabled = true 
 		      AND c.role = :role
 		      AND (
@@ -135,8 +140,8 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 	
 	@Transactional
 	@Modifying
-	@Query("UPDATE UserInfo u SET u.role = :role WHERE u.empId = :empId")
-	int updateSkillsByEmpId(String empId, String role);
+	@Query("UPDATE UserInfo u SET u.role = :role, u.designation = :designation, u.expInYears = :expInYears, u.reportingManager = :reportingManager WHERE u.empId = :empId ")
+	int updateResourceByEmpId(String empId, String role, String designation, BigDecimal expInYears, UserInfo reportingManager);
 	
 //	@Query("""
 //		    SELECT new com.cozentus.pms.dto.IdAndCodeDTO(u.id, u.empId)
@@ -383,7 +388,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			    FROM UserInfo u
 			    JOIN u.allocations a
 			    WHERE u.credential.role = :resourceRole AND u.enabled = true AND u.credential.enabled = true
-			    AND a.project.deliveryManager.empId = :empId AND a.project.id <> 1
+			    AND u.deliveryManager.empId = :empId AND a.project.id <> 1
 			""")
 			DMResourceStatsDTO getResourceStatsCombined(Roles resourceRole, String empId);
 		
@@ -430,10 +435,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND s.skillName = :skillName 
 			          AND usd.level = :level 
 			    )  
-			    AND a.project.deliveryManager.empId = :empId
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
-			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevels(String skillName, String level, String empId);
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevels(String skillName, String level);
 		
 		
 		@Query("""
@@ -473,10 +477,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND usd.level = :level 
 			          AND usd.user.empId IN :empId
 			    )  
-			    AND a.project.deliveryManager.empId IN :dmEmpId
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
-			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId, String dmEmpId); ;
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId); ;
 		
 		
 		
@@ -566,5 +569,36 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			       "JOIN ra.project p " +
 			       "WHERE p.projectManager.empId = :pmEmpId")
 			Set<ResourceBasics> findAllResourceSkillLevelForPM(String pmEmpId);
+			
+			
+			@Modifying
+			@Transactional
+			@Query("UPDATE UserInfo u SET u.deliveryManager = null WHERE u.empId = :resourceEmpId")
+			int deAllocateFromDM(String resourceEmpId);
+			
+			@Modifying
+			@Transactional
+			@Query("""
+			    UPDATE UserInfo u 
+			    SET u.deliveryManager = :deliveryManager
+			    WHERE u.empId = :resourceEmpId
+			""")
+			int allocateToDM(String resourceEmpId, UserInfo deliveryManager);
+			
+			
+			@Query("""
+			    SELECT DISTINCT u.empId 
+			    FROM 
+			    ResourceAllocation ra
+			    LEFT JOIN ra.resource u 
+			    WHERE u.deliveryManager.empId = :deliveryManagerEmpId 
+			    AND u.enabled = true 
+			    AND u.credential.role = :role
+			    AND ra.project.id = :projectId
+			    AND ra.allocationCompleted = false
+			    
+			""")
+			List<String> findEmpIdsForDeliverymanagerAndProjectId(String deliveryManagerEmpId, Integer projectId, Roles role);
+
 
 }

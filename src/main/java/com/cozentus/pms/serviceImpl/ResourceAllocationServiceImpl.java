@@ -5,7 +5,6 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -461,10 +461,33 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 		long count = resourceAllocationRepository.countActiveAllocationsExcludingProject(empId, 1);
 		if(count == 0) {
 			log.info("No active allocations found for empId: {} after deallocation in project: {}", empId, projectId);
-			resourceAllocationRepository.markAllocationAsCompleted(empId, 1);
+			LocalDate fixedEndDate = LocalDate.of(2026, 12, 31);
+			resourceAllocationRepository.markAllocationForBench111(empId, 1, fixedEndDate);
 		} else {
 			log.info("Active allocations still exist for empId: {} after deallocation in project: {}", empId, projectId);
 		}
+	}
+	
+	@Transactional
+	public void deallocateResourceFromDM(String resourceEmpId, Integer deliveryManagerId) {
+		log.info("Deallocating resource with empId: {} from delivery manager with id: {}", resourceEmpId, deliveryManagerId);
+		resourceAllocationRepository.markAlloationCompletedForMultipleAllocations(resourceEmpId, deliveryManagerId);
+
+		LocalDate fixedEndDate = LocalDate.of(2026, 12, 31);
+		log.info("Deallocating resource with empId: {} from delivery manager with id: {}", resourceEmpId, deliveryManagerId);
+		resourceAllocationRepository.markAllocationForBench111(resourceEmpId, 1, fixedEndDate);
+		userInfoRepository.deAllocateFromDM(resourceEmpId);
+	}
+	
+	public void allocateToDM(String resourceEmpId, Integer deliveryManagerId) {
+		log.info("Allocating resource with empId: {} to delivery manager with id: {}", resourceEmpId, deliveryManagerId);
+		UserInfo deliveryManagerRef = entityManager.getReference(UserInfo.class, deliveryManagerId);
+		int rows = userInfoRepository.allocateToDM(resourceEmpId, deliveryManagerRef);
+		if(rows == 0) {
+			log.warn("No allocations found to allocate for resourceEmpId: {} and deliveryManagerId: {}", resourceEmpId, deliveryManagerId);
+			throw new AccessDeniedException("No allocations found to allocate for resourceEmpId: " + resourceEmpId + " and deliveryManagerId: " + deliveryManagerId);
+		}
+		log.info("Resource with empId: {} allocated to delivery manager with id: {}", resourceEmpId, deliveryManagerId);
 	}
 
 }

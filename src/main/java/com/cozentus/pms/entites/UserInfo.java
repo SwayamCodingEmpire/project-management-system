@@ -73,6 +73,10 @@ public class UserInfo {
 	@ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
 	@JoinColumn(name = "reporting_manager_id")
 	private UserInfo reportingManager;
+	
+	@ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+	@JoinColumn(name = "delivery_manager_id")
+	private UserInfo deliveryManager;
 
 	@OneToMany(mappedBy = "reportingManager")
 	private List<UserInfo> subordinates;

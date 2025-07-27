@@ -58,6 +58,8 @@ public class SecurityConfig {
     		"/project",
     		"/project/default-mail-config",
     		"/project/types",
+    		"/resource-allocation/allocate-to-dm/**",
+    		"/resource-allocation/deAllocate-from-dm/**"
     		
     	};
     

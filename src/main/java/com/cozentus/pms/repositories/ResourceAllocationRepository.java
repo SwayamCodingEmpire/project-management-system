@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cozentus.pms.dto.BenchResourceWithLastDateDTO;
 import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.PlannedAllocationProjection;
 import com.cozentus.pms.dto.ProjectAllocationsViewFlatDTO;
@@ -55,7 +56,6 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        AND u.credential.role = :role
 			        AND u.credential.enabled = true
 			        
-
 			    GROUP BY
 			        u.empId, u.name, u.designation, u.expInYears,
 			        u.dailyWorkingHours,
@@ -149,12 +149,13 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        AND r.credential.role = :role
 			        AND r.credential.enabled = true
 			        AND p.projectCode = :projectCode
-
+			        AND a.allocationCompleted = false
 			    GROUP BY
 			        r.empId, r.name, r.designation, r.expInYears,
 			        r.dailyWorkingHours,
 			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate, c.name,
 			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, r.emailId
+			        
 			""")
 	List<ProjectAllocationsViewFlatDTO> findAllResourceAllocationsForProject(Roles role, String projectCode);
 
@@ -178,7 +179,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			    LEFT JOIN a.resource r
 			    LEFT JOIN a.project p
 			    LEFT JOIN p.projectManager m
-			    WHERE p.projectCode = :projectCode AND r.empId IN :empId AND a.enabled = true AND a.allocationCompleted = false AND a.actualAllocationEndDate IS NULL
+			    WHERE p.projectCode = :projectCode AND r.empId IN :empId AND a.enabled = true AND a.allocationCompleted = false
 			""")
 	List<ResourceAllocationSummaryDTO> findResourceAllocationSummaryByProjectCodeAndEmpId(String projectCode,
 			List<String> empId);
@@ -234,7 +235,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		    WHERE u.enabled = true
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
-		      AND p.deliveryManager.empId = :empId
+		      AND u.deliveryManager.empId = :empId
 		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
 		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForDM(Roles role, String empId);
@@ -351,12 +352,62 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 	
 	@Modifying
 	@Query("""
+	    UPDATE ResourceAllocation ra 
+	    SET ra.allocationCompleted = false, 
+	        ra.allocationStartDate = CURRENT_DATE, 
+	        ra.allocationEndDate = ?3, 
+	        ra.actualAllocationEndDate = null 
+	    WHERE ra.resource.empId = ?1 
+	    AND ra.project.id = ?2
+	    """)
+	int markAllocationForBench111(String empId, Integer targetProjectId, LocalDate fixedEndDate);
+
+		
+	
+	@Modifying
+	@Query("""
 	    UPDATE ResourceAllocation ra
-	    SET ra.allocationCompleted = true
+	    SET ra.allocationCompleted = true, ra.actualAllocationEndDate = CURRENT_DATE
 	    WHERE ra.resource.empId = :empId
-	    AND ra.project.id = :targetProjectId
+	    AND ra.project.deliveryManager.id = :deliveryManagerId
 	""")
-	int markAllocationAsCompleted(String empId, Integer targetProjectId);
+	int markAlloationCompletedForMultipleAllocations(String empId, Integer deliveryManagerId);
+	
+	
+	@Query("""
+	    SELECT new com.cozentus.pms.dto.BenchResourceWithLastDateDTO(
+	        u.empId,
+	        u.name,
+	        p.projectName,
+	        ra.allocationStartDate
+	    )
+	    FROM ResourceAllocation ra
+	    LEFT JOIN ra.project p
+	    LEFT JOIN ra.resource u
+	    WHERE ra.project.id = 1
+	    AND u.enabled = true
+	    AND ra.allocationCompleted = false
+	    AND u.deliveryManager.empId = :dmEmpId
+	    AND u.credential.role = :role
+	""")
+	List<BenchResourceWithLastDateDTO> findBenchResourcesWithLastDate(String dmEmpId, Roles role);
+	
+	
+	@Query("""
+		    SELECT COUNT(u.empId) 
+		    FROM ResourceAllocation ra
+		    LEFT JOIN ra.project p
+		    LEFT JOIN ra.resource u
+		    WHERE ra.project.id = 1
+		    AND u.enabled = true
+		    AND ra.allocationCompleted = false
+		    AND u.deliveryManager.empId = :dmEmpId
+		    AND u.credential.role = :role
+		""")
+		long findBenchResourcesCount(String dmEmpId, Roles role);
+	
+
+
 
 
 	
