@@ -55,6 +55,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			    WHERE u.enabled = true
 			        AND u.credential.role = :role
 			        AND u.credential.enabled = true
+			        AND u.deliveryManager.id = :deliveryManagerId
 			        
 			    GROUP BY
 			        u.empId, u.name, u.designation, u.expInYears,
@@ -62,7 +63,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
 			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
 			""")
-	List<ResourceAllocationsFlatDTO> findAllResourceAllocationsFlat(Roles role);
+	List<ResourceAllocationsFlatDTO> findAllResourceAllocationsFlat(Roles role, Integer deliveryManagerId);
 
 	@Query("""
 			      SELECT new com.cozentus.pms.dto.ResourceAllocationsFlatDTO(
@@ -97,7 +98,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 				    AND (:empIds IS NULL OR u.empId IN :empIds)
 				    AND (:designations IS NULL OR u.designation IN :designations)
 				    AND (:experience IS NULL OR u.expInYears >= :experience)
-				    
+				    AND u.deliveryManager.id = :deliveryManagerId
 			   GROUP BY
 			        u.empId, u.name, u.designation, u.expInYears,
 			        u.dailyWorkingHours,
@@ -106,7 +107,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 			        ORDER BY u.expInYears, u.designation ASC
 			""")
 	List<ResourceAllocationsFlatDTO> searchResourceAllocations(Roles role, List<String> empIds,
-			List<String> designations, BigDecimal experience);
+			List<String> designations, BigDecimal experience, Integer deliveryManagerId);
 
 	@Query("SELECT new com.cozentus.pms.dto.IdAndCodeDTO(ra.id, p.projectCode) " + "FROM ResourceAllocation ra "
 			+ "LEFT JOIN ra.project p " + "LEFT JOIN ra.resource r "

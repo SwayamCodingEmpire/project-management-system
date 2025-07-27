@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -23,6 +24,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cozentus.pms.config.UserAuthDetails;
 import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.ProjectAllocationDetailsDTO;
 import com.cozentus.pms.dto.ProjectAllocationViewDTO;
@@ -83,8 +85,15 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 
 	@Override
 	public List<ResourceAllocationsDTO> getAllResourceAllocations() {
+		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
+		Integer deliveryManagerId = userAuthDetails.getRight().userId();
+		if(userAuthDetails.getLeft().equals(Roles.PROJECT_MANAGER)) {
+			deliveryManagerId = userInfoRepository.findIdByDeliveryManagerId(userAuthDetails.getRight().userId())
+					.orElseThrow(() -> new AccessDeniedException("No delivery manager found for the project manager"));
+		}
+		
 	    List<ResourceAllocationsFlatDTO> resourceAllocationFlatDTO = resourceAllocationRepository
-	            .findAllResourceAllocationsFlat(Roles.RESOURCE);
+	            .findAllResourceAllocationsFlat(Roles.RESOURCE, deliveryManagerId);
 	    List<UserSkillDetailsDTO> userSingleSkillDTOs = userInfoRepository.fetchFlatUserSkillsByEmpIdIn(
 	            resourceAllocationFlatDTO.stream().map(ResourceAllocationsFlatDTO::id).distinct().toList());
 	    Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId = userSingleSkillDTOs.stream()
@@ -298,9 +307,16 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 		if (empIds != null && empIds.isEmpty()) {
 			empIds = null;
 		}
+		
+		Pair<Roles, UserAuthDetails> userAuthDetails = authenticationService.getCurrentUserDetails();
+		Integer deliveryManagerId = userAuthDetails.getRight().userId();
+		if(userAuthDetails.getLeft().equals(Roles.PROJECT_MANAGER)) {
+			deliveryManagerId = userInfoRepository.findIdByDeliveryManagerId(userAuthDetails.getRight().userId())
+					.orElseThrow(() -> new AccessDeniedException("No delivery manager found for the project manager"));
+		}
 
 		List<ResourceAllocationsFlatDTO> resourceAllocationFlatDTO = resourceAllocationRepository
-				.searchResourceAllocations(Roles.RESOURCE, empIds, designation, resourceFilterDTO.experience());
+				.searchResourceAllocations(Roles.RESOURCE, empIds, designation, resourceFilterDTO.experience(), deliveryManagerId);
 
 		List<UserSkillDetailsDTO> userSingleSkillDTOs = userInfoRepository.fetchFlatUserSkillsByEmpIdIn(empIds);
 		Map<String, List<UserSkillDetailsDTO>> skillMapByEmpId = userSingleSkillDTOs.stream()

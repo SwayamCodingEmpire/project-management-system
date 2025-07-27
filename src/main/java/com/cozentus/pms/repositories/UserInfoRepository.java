@@ -599,6 +599,10 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			    
 			""")
 			List<String> findEmpIdsForDeliverymanagerAndProjectId(String deliveryManagerEmpId, Integer projectId, Roles role);
+			
+			
+			@Query("SELECT u.deliveryManager.id FROM UserInfo u WHERE u.id = :userId ")
+			Optional<Integer> findIdByDeliveryManagerId(Integer userId);
 
 
 }
