@@ -376,7 +376,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			        SUM(COALESCE(a.billabilityPercent, 0))/100,
 			        COUNT(DISTINCT u.id),
 			        COUNT(DISTINCT CASE 
-			            WHEN (a.id IS NULL OR COALESCE(a.billabilityPercent, 0) = 0) THEN u .id
+			            WHEN (a.id IS NULL OR (COALESCE(a.billabilityPercent, 0) = 0) AND a.allocationCompleted = true) THEN u .id
 			            ELSE NULL 
 			        END),
 			        COUNT(DISTINCT CASE 

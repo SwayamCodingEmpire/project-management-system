@@ -167,7 +167,7 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 	@Override
 	@Transactional
 	public void updateProjectDetails(ProjectDTO projectDTO, String code) {
-		
+		Integer deliverymanagerId = authenticationService.getCurrentUserDetails().getRight().userId();
 		ProjectDetails projectDetails = projectDetailsRepository.findByProjectCode(code).orElseThrow(() -> new RecordNotFoundException("Project not found"));;
 		Client client;
 		if(!projectDTO.projectType().customerProject()) {
@@ -191,12 +191,13 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		projectDetails.setCustomer(client);
 		UserInfoIdentifierDTO managerDTO = userInfoRepository.findBasicsByEmpId(projectDTO.managerId())
 				.orElseThrow(() -> new RecordNotFoundException("User not found"));
+		
 		if(managerDTO.role().equals(Roles.RESOURCE)) {
 			credentialRepository.updateRoleByUserId(managerDTO.id(), Roles.PROJECT_MANAGER);
 		}
 		UserInfo manager = entityManager.getReference(UserInfo.class, managerDTO.id());
 		projectDetails.setProjectManager(manager);
-		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, managerDTO.id());
+		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, deliverymanagerId);
 		projectDetails.setDeliveryManager(deliveryManager);	
 		credentialRepository.updateRoleByUserId(managerDTO.id(), Roles.PROJECT_MANAGER);
 		projectDetailsRepository.saveAndFlush(projectDetails);

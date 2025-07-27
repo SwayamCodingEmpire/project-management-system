@@ -45,6 +45,7 @@ public class DMDashboardServiceImpl implements DMDashboardService {
 		if (userAuthDetails.getLeft().equals(Roles.DELIVERY_MANAGER)) {
 			long benchCount = resourceAllocationRepository.findBenchResourcesCount(dmEmpId, Roles.RESOURCE);
 			DMResourceStatsDTO dmResourceStatsDTO =  userInfoRepository.getResourceStatsCombined(Roles.RESOURCE, dmEmpId);
+			log.info(dmResourceStatsDTO.toString());
 			return new DMResourceStatsDTO(
 				dmResourceStatsDTO.totalBillability(),
 				dmResourceStatsDTO.totalResourceUsers(),

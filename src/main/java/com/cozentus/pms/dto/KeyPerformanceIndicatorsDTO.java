@@ -16,13 +16,14 @@ public record KeyPerformanceIndicatorsDTO(
 	public static KeyPerformanceIndicatorsDTO from(DMResourceStatsDTO dmStats, UtilizationBreakdownDTO utilStats) {
 	    int totalResources = dmStats.totalResourceUsers().intValue();
 
+	    System.out.println(totalResources);
 	    BigDecimal billed = dmStats.totalBillability()
-	        .multiply(BigDecimal.valueOf(totalResources))
-	        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
 	        .setScale(2, RoundingMode.HALF_UP); // Ensures billed is 2-decimal rounded
 
+	    System.out.println(billed);
 	    int notBilled = totalResources - billed.setScale(0, RoundingMode.HALF_UP).intValue(); // for integer diff
 
+	    System.out.println(notBilled);
 	    // Helper for rounding util values
 	    Function<BigDecimal, BigDecimal> round = val ->
 	        val == null ? null : val.setScale(2, RoundingMode.HALF_UP);
