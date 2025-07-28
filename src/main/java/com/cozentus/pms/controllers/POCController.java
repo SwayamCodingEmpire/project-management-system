@@ -49,6 +49,12 @@ public class POCController {
 		bulkResourceUpsertServiceImpl.syncResourcesWithDB();
 
 	}
+	
+	@GetMapping("/normalize-all")
+	public void normalizeSkillsAll() {
+		gptSkillNormalizerService.populateQuadrantVectorDB();
+
+	}
 //	
 //	@GetMapping("/search")
 //	public void searchSkills() {
