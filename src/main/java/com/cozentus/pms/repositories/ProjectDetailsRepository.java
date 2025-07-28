@@ -178,7 +178,7 @@ public interface ProjectDetailsRepository extends JpaRepository<ProjectDetails, 
 	int updateDefaultMailConfig(String timesheetSummaryDay, String timesheetWarningDay1, String timesheetWarningDay2, String timesheetReminderDay);
 	
 	@Query("SELECT new com.cozentus.pms.dto.ProjectTypeDropdownDTO(pt.id, pt.projectType, pt.isCustomerProject) " +
-			"FROM ProjectType pt " +
+			"FROM ProjectType pt  WHERE pt.id <> 1" +
 			"ORDER BY pt.projectType")
 	List<ProjectTypeDropdownDTO> findAllProjectTypes();
 	
