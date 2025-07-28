@@ -504,8 +504,8 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 
 		@Query("SELECT new com.cozentus.pms.dto.ResourceBasics(u.empId, u.name, s.skillName, usd.level) " +
 			       "FROM UserSkillDetail usd " +
-			       "JOIN usd.user u " +
-			       "JOIN usd.skill s")
+			       "LEFT JOIN usd.user u " +
+			       "LEFT JOIN usd.skill s")
 			Set<ResourceBasics> findAllResourceSkillLevel();
 		
 		

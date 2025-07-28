@@ -119,10 +119,14 @@ public class ManagerDashboardController {
 	    Set<ResourceBasics> skillResourceDetails = new HashSet<>();
 	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
 	    	skillResourceDetails = userInfoService.getSkillsForDM(empId);
+	    	log.info("Fetching skills for DM: {}", empId);
+	    	log.info(skillResourceDetails.toString());
  
 	    }
 	    if(role.equals(Roles.PROJECT_MANAGER) && skillName != null && level != null) {
 	    	skillResourceDetails = userInfoService.getSkillsForPM(empId);
+	    	log.info("Fetching skills for PM: {}", empId);
+	    	log.info(skillResourceDetails.toString());
 	    }
 	    
  
