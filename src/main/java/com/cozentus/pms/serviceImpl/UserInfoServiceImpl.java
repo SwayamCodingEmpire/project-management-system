@@ -374,7 +374,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	}
 	@Override
 	public Set<ResourceBasics> getSkillsForPM(String pmEmpId) {
-        return userInfoRepository.findAllResourceSkillLevelForPM(pmEmpId);
+        return userInfoRepository.findAllResourceSkillLevel();
  
 	}
 

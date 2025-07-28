@@ -144,6 +144,8 @@ public interface SkillRepository extends JpaRepository<Skill, Integer> {
 		""")
 		List<SkillCountByNameDTO> findSkillCountByName(String dmEimpId);
 	
+	
+	
 	@Query("""
 		    SELECT new com.cozentus.pms.dto.SkillCountByNameDTO(
 		        s.skillName, COUNT(DISTINCT u.empId)

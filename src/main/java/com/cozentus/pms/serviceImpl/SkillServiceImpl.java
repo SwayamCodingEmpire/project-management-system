@@ -54,7 +54,7 @@ public class SkillServiceImpl implements SkillService {
 	                skillCountByNameDTOs = skillRepository.findSkillCountByName(dmEmpId);
 	            } else {
 	                log.info("Fetching skill counts for PM: {}", dmEmpId);
-		            skillCountByNameDTOs = skillRepository.findSkillCountByName(dmEmpId);
+		            skillCountByNameDTOs = skillRepository.findSkillCountByNameForPM(dmEmpId);
 	            }
 	                // Assuming PMs can also fetch skill counts by DM empId
 
