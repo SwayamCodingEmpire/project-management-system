@@ -117,14 +117,14 @@ public class ManagerDashboardController {
 	    List<SkillCountDTO> skillCounts = skillServiceImpl.getSkillCounts(role, null, empId);
  
 	    Set<ResourceBasics> skillResourceDetails = new HashSet<>();
-	    if(role.equals(Roles.DELIVERY_MANAGER) && skillName != null && level != null) {
-	    	skillResourceDetails = userInfoService.getSkillsForDM(empId);
+	    if(role.equals(Roles.DELIVERY_MANAGER) ) {
+	    	skillResourceDetails = userInfoService.getSkillsForDM();
 	    	log.info("Fetching skills for DM: {}", empId);
 	    	log.info(skillResourceDetails.toString());
  
 	    }
-	    if(role.equals(Roles.PROJECT_MANAGER) && skillName != null && level != null) {
-	    	skillResourceDetails = userInfoService.getSkillsForPM(empId);
+	    if(role.equals(Roles.PROJECT_MANAGER) ) {
+	    	skillResourceDetails = userInfoService.getSkillsForPM();
 	    	log.info("Fetching skills for PM: {}", empId);
 	    	log.info(skillResourceDetails.toString());
 	    }

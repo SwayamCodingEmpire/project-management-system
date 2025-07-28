@@ -359,7 +359,6 @@ public class UserInfoServiceImpl implements UserInfoService {
 	public void deleteSkillFromResource(String empId, String skillName) {
 		skillRepository.deleteSkillFromUserDetailSkill(empId, skillName);
 		gptSkillNormalizerService.populateQuadrantVectorDBForSingleUser(empId);
-		
 	}
 	
 //	@Override
@@ -368,12 +367,12 @@ public class UserInfoServiceImpl implements UserInfoService {
 //	}
 	
 	@Override
-	public Set<ResourceBasics> getSkillsForDM(String dmEmpId) {
+	public Set<ResourceBasics> getSkillsForDM() {
         return userInfoRepository.findAllResourceSkillLevel();
  
 	}
 	@Override
-	public Set<ResourceBasics> getSkillsForPM(String pmEmpId) {
+	public Set<ResourceBasics> getSkillsForPM() {
         return userInfoRepository.findAllResourceSkillLevel();
  
 	}

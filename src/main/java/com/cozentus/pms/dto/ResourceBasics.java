@@ -12,4 +12,6 @@ public class ResourceBasics {
     private String name;
     private String skillName;
     private String level;
+    
+    
 }
