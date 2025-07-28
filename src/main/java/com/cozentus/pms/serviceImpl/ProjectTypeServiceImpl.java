@@ -25,6 +25,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
 	@Override
 	public List<ProjectTypeSummaryDTO> getAllProjectTypeSummaries() {
 		return projectTypeRepository.findAll().stream()
+				.filter(pt -> pt.getId() != 1)
 				.map(pt -> new ProjectTypeSummaryDTO(pt.getId(), pt.getProjectType(), pt.getIsCustomerProject() // Fixed
 																												// line
 				)).collect(Collectors.toList());

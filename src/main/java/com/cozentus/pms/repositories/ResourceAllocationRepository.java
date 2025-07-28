@@ -237,6 +237,7 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
 		      AND u.credential.role = :role
 		      AND u.credential.enabled = true 
 		      AND u.deliveryManager.empId = :empId
+		      AND p.id <> 1
 		    GROUP BY u.empId, p.projectCode, pt.isCustomerProject, a.billabilityPercent, a.plannedHours, u.dailyWorkingHours
 		""")
 		List<ResourceProjectUtilizationSummaryDTO> findResourceUtilizationSummaryForDM(Roles role, String empId);
