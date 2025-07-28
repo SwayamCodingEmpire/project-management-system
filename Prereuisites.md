@@ -40,7 +40,8 @@ For LLM search functionality, a Qdrant vector database is required. The recommen
  
 ### 2. Install Docker Desktop
 - Download and install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).
-- Configure Docker Desktop to use the WSL 2.
+- Configure Docker Desktop to use the WSL 2.(To configure Go to Settings > Resources > WSL integration in docker desktop)
+- Detailed configuration may vary with system. 
  
 ### 3. Prepare Qdrant Docker Environment
 - Open your Ubuntu/WSL terminal.
