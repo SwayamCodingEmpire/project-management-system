@@ -336,8 +336,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    FROM UserInfo u
 		    LEFT JOIN u.managedProjects p
 		    WHERE u.enabled = true
+		    AND u.deliveryManager.empId = :dmEmpId OR u.deliveryManager IS NULL
 		""")
-		List<ProjectManagerFlatDTO> findFromManaged();
+		List<ProjectManagerFlatDTO> findFromManaged(String dmEmpId);
 
 
 	@Query("""
@@ -347,8 +348,9 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    FROM UserInfo u
 		    LEFT JOIN u.deliveredProjects dp
 		    WHERE u.enabled = true
+		    AND u.deliveryManager.empId = :dmEmpId OR u.deliveryManager IS NULL
 		""")
-		List<ProjectManagerFlatDTO> findFromDelivered();
+		List<ProjectManagerFlatDTO> findFromDelivered(String dmEmpId);
 
 	@Query("""
 		    SELECT new com.cozentus.pms.dto.ProjectManagerFlatDTO(
@@ -358,16 +360,17 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		    JOIN u.allocations a
 		    LEFT JOIN a.project rp
 		    WHERE u.enabled = true AND a.allocationCompleted = true
+		    AND u.deliveryManager.empId = :dmEmpId OR u.deliveryManager IS NULL
 		""")
-		List<ProjectManagerFlatDTO> findFromAllocated();
+		List<ProjectManagerFlatDTO> findFromAllocated(String dmEmpId);
 
 
 		
-		default List<ProjectManagerFlatDTO> findAllResourcesWithProjectNames() {
+		default List<ProjectManagerFlatDTO> findAllResourcesWithProjectNames(String dmEmpId) {
 		    List<ProjectManagerFlatDTO> combined = new ArrayList<>();
-		    combined.addAll(findFromManaged());
-		    combined.addAll(findFromDelivered());
-		    combined.addAll(findFromAllocated());
+		    combined.addAll(findFromManaged(dmEmpId));
+		    combined.addAll(findFromDelivered(dmEmpId));
+		    combined.addAll(findFromAllocated(dmEmpId));
 		    return combined;
 		}
 		

@@ -22,6 +22,7 @@ import com.cozentus.pms.dto.ResourceDTO;
 import com.cozentus.pms.dto.ResourceEditDTO;
 import com.cozentus.pms.dto.SkillUpsertDTO;
 import com.cozentus.pms.serviceImpl.SkillServiceImpl;
+import com.cozentus.pms.services.AuthenticationService;
 import com.cozentus.pms.services.UserInfoService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -34,15 +35,18 @@ import lombok.extern.slf4j.Slf4j;
 public class UserInfoController {
 	private final UserInfoService userInfoService;
 	private final SkillServiceImpl skillServiceImpl;
+	private final AuthenticationService authenticationService;
 	
-	public UserInfoController(UserInfoService userInfoService, SkillServiceImpl skillServiceImpl) {
+	public UserInfoController(UserInfoService userInfoService, SkillServiceImpl skillServiceImpl, AuthenticationService authenticationService) {
 		this.userInfoService = userInfoService;
 		this.skillServiceImpl = skillServiceImpl;
+		this.authenticationService = authenticationService;
 	}
 	
 	@GetMapping("/project-managers")
 	public ResponseEntity<List<ProjectManagerDTO>> getAllProjectManagersWithProjects() {
-		return ResponseEntity.ok(userInfoService.getAllProjectResourcesWithAssociatedProjectsProjects());
+		String dmEmpId = authenticationService.getCurrentUserDetails().getRight().empId();
+		return ResponseEntity.ok(userInfoService.getAllProjectResourcesWithAssociatedProjectsProjects(dmEmpId));
 	}
 	
 	@GetMapping("/resources")

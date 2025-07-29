@@ -17,7 +17,7 @@ import com.cozentus.pms.dto.SkillUpsertDTO;
 public interface UserInfoService {
 	
 	List<ProjectManagerDTO> getAllProjectManagersWithProjects();
-	List<ProjectManagerDTO> getAllProjectResourcesWithAssociatedProjectsProjects();
+	List<ProjectManagerDTO> getAllProjectResourcesWithAssociatedProjectsProjects(String dmEmpId);
 	Page<ResourceDTO> getAllResourcesWithAllocations(String search, Pageable pageable);
 	List<ReportingManagerDTO> getAllReportingManagers();
 	void addResource(ResourceDTO resourceDTO);

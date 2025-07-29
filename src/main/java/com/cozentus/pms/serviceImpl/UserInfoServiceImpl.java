@@ -115,9 +115,9 @@ public class UserInfoServiceImpl implements UserInfoService {
 	
 	@Override
 	@Cacheable(value = "resourceAndAssociatedProjects", key = "'allProjectManagersWithProjects'")
-	public List<ProjectManagerDTO> getAllProjectResourcesWithAssociatedProjectsProjects() {
+	public List<ProjectManagerDTO> getAllProjectResourcesWithAssociatedProjectsProjects(String dmEmpId) {
 		List<ProjectManagerFlatDTO> projectManagersFlatDTO = userInfoRepository
-				.findAllResourcesWithProjectNames();
+				.findAllResourcesWithProjectNames(dmEmpId);
 
 		Map<String, ProjectManagerDTO> projectManagerMap = new LinkedHashMap<>();
 
