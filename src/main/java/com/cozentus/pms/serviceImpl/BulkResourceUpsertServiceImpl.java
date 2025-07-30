@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,7 @@ public class BulkResourceUpsertServiceImpl {
         this.passwordEncoder = passwordEncoder;
     }
     
+    @Scheduled(cron = "0 0 8 * * TUE")
     @Transactional
     public void syncResourcesWithDB() {
         // Step 1: Fetch data from Zoho

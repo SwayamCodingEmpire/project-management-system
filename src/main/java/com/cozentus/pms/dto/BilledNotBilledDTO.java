@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record BilledNotBilledDTO(
 	    BigDecimal billed,
-	    int notBilled
+	    double notBilled
 		) {
 
 }

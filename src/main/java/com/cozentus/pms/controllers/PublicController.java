@@ -3,6 +3,7 @@ package com.cozentus.pms.controllers;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,7 +41,7 @@ public class PublicController {
 	}
 	
 	@PostMapping("/login")
-	public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginRequest) {
+	public ResponseEntity<LoginResponseDTO> login(@RequestBody @Validated LoginDTO loginRequest) {
 		log.info("Login attempt for user: {}", loginRequest);
 		return ResponseEntity.ok(authenticationService.authenticate(loginRequest));
 	}

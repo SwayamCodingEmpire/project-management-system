@@ -1,4 +1,4 @@
-package com.cozentus.pms;
+package com.cozentus.pms.serviceImpl;
 
 import com.cozentus.pms.config.UserAuthDetails;
 import com.cozentus.pms.dto.*;

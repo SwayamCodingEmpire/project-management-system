@@ -21,7 +21,7 @@ public record KeyPerformanceIndicatorsDTO(
 	        .setScale(2, RoundingMode.HALF_UP); // Ensures billed is 2-decimal rounded
 
 	    System.out.println(billed);
-	    int notBilled = totalResources - billed.setScale(0, RoundingMode.HALF_UP).intValue(); // for integer diff
+	    double notBilled = totalResources - billed.doubleValue(); // for integer diff
 
 	    System.out.println(notBilled);
 	    // Helper for rounding util values
