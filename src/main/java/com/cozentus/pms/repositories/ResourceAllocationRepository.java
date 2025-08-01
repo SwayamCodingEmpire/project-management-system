@@ -26,88 +26,95 @@ import com.cozentus.pms.helpers.Roles;
 public interface ResourceAllocationRepository extends JpaRepository<ResourceAllocation, Integer> {
 
 	@Query("""
-			    SELECT new com.cozentus.pms.dto.ResourceAllocationsFlatDTO(
-			        u.empId,
-			        u.name,
-			        u.designation,
-			        u.expInYears,
-			        u.dailyWorkingHours,
-			        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
-			            p.projectCode,
-			            p.projectName,
-			            pt.isCustomerProject,
-			            a.allocationStartDate,
-			            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
-			            a.role,
-			            a.billabilityPercent,
-			            a.plannedHours,
-			            SUM(CASE WHEN ts.approval = true THEN ts.hours ELSE 0 END),
-			            COUNT(CASE WHEN ts.approval = true THEN ts.id ELSE null END)
-			        )
-			    )
-			    FROM UserInfo u
-			    
-			    LEFT JOIN u.allocations a ON a.enabled = true
-			    LEFT JOIN a.project p
-			    ON p.id <> 1
-			    LEFT JOIN a.timeSheets ts ON ts.enabled = true
-			    LEFT JOIN p.projectType pt
-			    WHERE u.enabled = true
-			        AND u.credential.role = :role
-			        AND u.credential.enabled = true
-			        AND u.deliveryManager.id = :deliveryManagerId
-			        
-			    GROUP BY
-			        u.empId, u.name, u.designation, u.expInYears,
-			        u.dailyWorkingHours,
-			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
-			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
-			""")
-	List<ResourceAllocationsFlatDTO> findAllResourceAllocationsFlat(Roles role, Integer deliveryManagerId);
+		    SELECT new com.cozentus.pms.dto.ResourceAllocationsFlatDTO(
+		        CONCAT('', u.empId),
+		        u.name,
+		        u.designation,
+		        u.expInYears,
+		        u.dailyWorkingHours,
+		        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
+		            p.projectCode,
+		            p.projectName,
+		            pt.isCustomerProject,
+		            a.allocationStartDate,
+		            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
+		            a.role,
+		            a.billabilityPercent,
+		            a.plannedHours,
+		            SUM(CASE WHEN ts.approval = true THEN ts.hours ELSE 0 END),
+		            COUNT(CASE WHEN ts.approval = true THEN ts.id ELSE null END)
+		        ),
+		        CASE WHEN u.deliveryManager.id = :deliveryManagerId THEN true ELSE false END,
+			    dm.name
+		    )
+		    FROM UserInfo u
+		    
+		    LEFT JOIN u.deliveryManager dm
+		    LEFT JOIN u.allocations a ON a.enabled = true
+		    LEFT JOIN a.project p
+		    ON p.id <> 1
+		    LEFT JOIN a.timeSheets ts ON ts.enabled = true
+		    LEFT JOIN p.projectType pt
+		    WHERE u.enabled = true
+		        AND u.credential.role = :role
+		        AND u.credential.enabled = true
+		        
+		    GROUP BY
+		        u.empId, u.name, u.designation, u.expInYears,
+		        u.dailyWorkingHours,u.deliveryManager.id,u.deliveryManager.name,
+		        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
+		        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
+		""")
+List<ResourceAllocationsFlatDTO> findAllResourceAllocationsFlat(Roles role, Integer deliveryManagerId);
+	
+	
 
 	@Query("""
-			      SELECT new com.cozentus.pms.dto.ResourceAllocationsFlatDTO(
-			        u.empId,
-			        u.name,
-			        u.designation,
-			        u.expInYears,
-			        u.dailyWorkingHours,
-			        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
-			            p.projectCode,
-			            p.projectName,
-			            pt.isCustomerProject,
-			            a.allocationStartDate,
-			            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
-			            a.role,
-			            a.billabilityPercent,
-			            a.plannedHours,
-			            SUM(CASE WHEN ts.approval = true THEN ts.hours ELSE 0 END),
-			            COUNT(CASE WHEN ts.approval = true THEN ts.id ELSE null END)
-			        )
-			    )
-			    FROM UserInfo u
-			  
-			    LEFT JOIN u.allocations a ON a.enabled = true
-			    LEFT JOIN a.project p
-			    ON p.id <> 1
-			    LEFT JOIN a.timeSheets ts ON ts.enabled = true
-			    LEFT JOIN p.projectType pt
-			    WHERE u.enabled = true
-			        AND u.credential.role = :role
-			        AND u.credential.enabled = true
-				    AND (:empIds IS NULL OR u.empId IN :empIds)
-				    AND (:designations IS NULL OR u.designation IN :designations)
-				    AND (:experience IS NULL OR u.expInYears >= :experience)
-				    AND u.deliveryManager.id = :deliveryManagerId
-			   GROUP BY
-			        u.empId, u.name, u.designation, u.expInYears,
-			        u.dailyWorkingHours,
-			        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
-			        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
-			        ORDER BY u.expInYears, u.designation ASC
-			""")
-	List<ResourceAllocationsFlatDTO> searchResourceAllocations(Roles role, List<String> empIds,
-			List<String> designations, BigDecimal experience, Integer deliveryManagerId);
+		      SELECT new com.cozentus.pms.dto.ResourceAllocationsFlatDTO(
+		        u.empId,
+		        u.name,
+		        u.designation,
+		        u.expInYears,
+		        u.dailyWorkingHours,
+		        new com.cozentus.pms.dto.ProjectAllocationDetailsDTO(
+		            p.projectCode,
+		            p.projectName,
+		            pt.isCustomerProject,
+		            a.allocationStartDate,
+		            COALESCE(a.actualAllocationEndDate, a.allocationEndDate),
+		            a.role,
+		            a.billabilityPercent,
+		            a.plannedHours,
+		            SUM(CASE WHEN ts.approval = true THEN ts.hours ELSE 0 END),
+		            COUNT(CASE WHEN ts.approval = true THEN ts.id ELSE null END)
+		        ),
+		        CASE WHEN u.deliveryManager.id = :deliveryManagerId THEN true ELSE false END,
+		        dm.name
+		    )
+		    FROM UserInfo u
+		  
+		    LEFT JOIN u.deliveryManager dm
+		    LEFT JOIN u.allocations a ON a.enabled = true
+		    LEFT JOIN a.project p
+		    ON p.id <> 1
+		    LEFT JOIN a.timeSheets ts ON ts.enabled = true
+		    LEFT JOIN p.projectType pt
+		    WHERE u.enabled = true
+		        AND u.credential.role = :role
+		        AND u.credential.enabled = true
+			    AND (:empIds IS NULL OR u.empId IN :empIds)
+			    AND (:designations IS NULL OR u.designation IN :designations)
+			    AND (:experience IS NULL OR u.expInYears >= :experience)
+		   GROUP BY
+		        u.empId, u.name, u.designation, u.expInYears,
+		        u.dailyWorkingHours,u.deliveryManager.id,u.deliveryManager.name,
+		        p.projectCode, p.projectName, a.allocationStartDate, a.allocationEndDate,
+		        a.actualAllocationEndDate, a.role, a.billabilityPercent, a.plannedHours, pt.isCustomerProject
+		        ORDER BY u.expInYears, u.designation ASC
+		""")
+List<ResourceAllocationsFlatDTO> searchResourceAllocations(Roles role, List<String> empIds,
+		List<String> designations, BigDecimal experience, Integer deliveryManagerId);
+
 
 	@Query("SELECT new com.cozentus.pms.dto.IdAndCodeDTO(ra.id, p.projectCode) " + "FROM ResourceAllocation ra "
 			+ "LEFT JOIN ra.project p " + "LEFT JOIN ra.resource r "

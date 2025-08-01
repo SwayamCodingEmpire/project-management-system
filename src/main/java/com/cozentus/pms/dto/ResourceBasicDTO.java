@@ -8,6 +8,7 @@ public record ResourceBasicDTO(
 		String designation,
 		BigDecimal experience,
 		BigDecimal utilization,
+		Long projectCount,
 		BigDecimal dailyWorkingHours
 		) {
 

@@ -5,6 +5,7 @@ import java.util.List;
 
 public record ResourceAllocationsDTO(
 	    String id,
+	    Boolean deliveryManagerId,
 	    String name,
 	    List<SkillDTO> primarySkill,
 	    List<SkillDTO> secondarySkill,
@@ -13,5 +14,7 @@ public record ResourceAllocationsDTO(
 	    List<ProjectAllocationDetailsDTO> currentAllocation,
 	    BigDecimal billability,
 	    BigDecimal plannedUtil,
-	    BigDecimal actualUtil
+	    BigDecimal actualUtil,
+	    String deliveryManagerName
+	    
 	) {}

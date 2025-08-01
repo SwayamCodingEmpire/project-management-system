@@ -426,7 +426,13 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		
 		@Query("""
 			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
-			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			        u.name, 
+			        u.empId, 
+			        u.designation, 
+			        u.expInYears, 
+			        CAST(COALESCE(AVG(CASE WHEN a.project.id <> 1 THEN a.plannedHours END), 0) AS BigDecimal), 
+			        COUNT(CASE WHEN a.project.id <> 1 THEN a.id END), 
+			        u.dailyWorkingHours 
 			    )
 			    FROM UserInfo u 
 			    LEFT JOIN u.allocations a 
@@ -437,15 +443,15 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			        WHERE usd.user.id = u.id 
 			          AND s.skillName = :skillName 
 			          AND usd.level = :level 
-			    )  
-			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
-			""") 
+			    )   
+			    GROUP BY u.id, u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
+			""")
 			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevels(String skillName, String level);
 		
 		
 		@Query("""
 			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
-			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), COUNT(a.id), u.dailyWorkingHours 
 			    )
 			    FROM UserInfo u 
 			    LEFT JOIN u.allocations a 
@@ -457,6 +463,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND s.skillName = :skillName 
 			          AND usd.level = :level 
 			    ) AND a.project.projectManager.empId = :empId
+			    AND a.project.id <> 1
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
 			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsforPM(String skillName, String level, String empId);
@@ -467,28 +474,34 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 		
 		@Query("""
 			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
-			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			        u.name, 
+			        u.empId, 
+			        u.designation, 
+			        u.expInYears, 
+			        CAST(COALESCE(AVG(CASE WHEN a.project.id <> 1 AND a.allocationCompleted = false THEN a.plannedHours END), 0) AS BigDecimal), 
+			        COUNT(CASE WHEN a.project.id <> 1 AND a.allocationCompleted = false THEN a.id END), 
+			        u.dailyWorkingHours
 			    )
-			    FROM UserInfo u 
-			    LEFT JOIN u.allocations a 
-			    WHERE EXISTS ( 
-			        SELECT 1 
-			        FROM UserSkillDetail usd 
-			        JOIN usd.skill s 
-			        WHERE usd.user.id = u.id 
-			          AND s.skillName = :skillName 
-			          AND usd.level = :level 
+			    FROM UserInfo u
+			    LEFT JOIN u.allocations a
+			    WHERE EXISTS (
+			        SELECT 1
+			        FROM UserSkillDetail usd
+			        JOIN usd.skill s
+			        WHERE usd.user.id = u.id
+			          AND s.skillName = :skillName
+			          AND usd.level = :level
 			          AND usd.user.empId IN :empId
-			    )  
-			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
-			""") 
-			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId); ;
+			    )
+			    GROUP BY u.id, u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours
+			""")
+			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsByEmpId(String skillName, String level, List<String> empId);
 		
 		
 		
 		@Query("""
 			    SELECT new com.cozentus.pms.dto.ResourceBasicDTO(
-			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), u.dailyWorkingHours 
+			        u.name, u.empId, u.designation, u.expInYears, CAST(AVG(COALESCE(a.plannedHours,0)) AS BigDecimal), COUNT(a.id), u.dailyWorkingHours 
 			    )
 			    FROM UserInfo u 
 			    LEFT JOIN u.allocations a 
@@ -501,6 +514,7 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 			          AND usd.level = :level 
 			          AND usd.user.empId IN :empIdList
 			    ) AND a.project.projectManager.empId = :empId
+			    AND a.project.id <> 1
 			    GROUP BY u.name, u.empId, u.designation, u.expInYears, u.dailyWorkingHours  
 			""") 
 			List<ResourceBasicDTO> findAllResourcesWithSkillsAndLevelsforPMByEmpIdIn(String skillName, String level, String empId, List<String> empIdList) ;

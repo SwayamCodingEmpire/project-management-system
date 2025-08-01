@@ -297,7 +297,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 	        .map(res -> {
 	            BigDecimal exp = empIdToExperience.getOrDefault(res.employeeId(), BigDecimal.ZERO);
 	            BigDecimal utilization = res.utilization().divide(res.dailyWorkingHours(), 2, RoundingMode.HALF_UP);
-	            return new ResourceBasicDTO(res.name(), res.employeeId(), res.designation(), exp, utilization, res.dailyWorkingHours());
+	            return new ResourceBasicDTO(res.name(), res.employeeId(), res.designation(), exp, utilization, res.projectCount() , res.dailyWorkingHours());
 	        })
 	        .collect(Collectors.toList());
 	}

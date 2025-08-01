@@ -10,6 +10,8 @@ public record ResourceAllocationsFlatDTO(
     String designation,
     BigDecimal experience,
     BigDecimal dailyWorkingHours,
-    ProjectAllocationDetailsDTO currentAllocation
+    ProjectAllocationDetailsDTO currentAllocation,
+    Boolean deliveryManagerId,
+    String deliveryManagerName
 ) {}
 

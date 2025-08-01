@@ -373,6 +373,17 @@ public interface ProjectDetailsRepository extends JpaRepository<ProjectDetails, 
 			WHERE ra.resource.id = :resourceId AND p.enabled = true	AND ra.allocationCompleted = false		
 			""")
 	List<ProjectDetailsForProjectListDTO> findAllProjectsForResource(Integer resourceId);
+	
+	
+	@Query("""
+			SELECT p.projectName
+			FROM ResourceAllocation ra
+			LEFT JOIN ra.project p
+			WHERE ra.resource.empId = :empId AND p.enabled = true
+			AND ra.allocationCompleted = false
+			AND p.id <> 1
+			""")	
+	List<String> getProjectNamesByResourceEmpId(String empId);
 
 
 

@@ -114,17 +114,17 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 		if (resourceAllocationsFlatDTO == null || resourceAllocationsFlatDTO.isEmpty()) {
 			return List.of();
 		}
-
+ 
 		return resourceAllocationsFlatDTO.stream()
 				.collect(Collectors.groupingBy(ResourceAllocationsFlatDTO::id, LinkedHashMap::new, Collectors.toList()))
 				.entrySet().stream().map(entry -> {
 					String empId = entry.getKey();
 					List<ResourceAllocationsFlatDTO> resourceAllocationsTempDTO = entry.getValue();
 					ResourceAllocationsFlatDTO first = resourceAllocationsTempDTO.get(0);
-
+ 
 					BigDecimal dailyHours = defaultZero(first.dailyWorkingHours());
 					List<ProjectAllocationDetailsDTO> projectAllocationsDTO = new ArrayList<>();
-
+ 
 					BigDecimal totalBillability = BigDecimal.ZERO;
 					BigDecimal totalPlannedUtil = BigDecimal.ZERO;
 					BigDecimal totalActualUtil = BigDecimal.ZERO;
@@ -133,7 +133,7 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 					Set<String> seenSkillKeys = new HashSet<>();
 					List<SkillDTO> primarySkills = new ArrayList<>();
 					List<SkillDTO> secondarySkills = new ArrayList<>();
-
+ 
 					List<UserSkillDetailsDTO> skills = skillMapByEmpId.getOrDefault(empId, List.of());
 					//log.info(skills.toString());
 					for (UserSkillDetailsDTO skill : skills) {
@@ -147,44 +147,44 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 							}
 						}
 //					}
-
+ 
 					for (ResourceAllocationsFlatDTO flat : resourceAllocationsTempDTO) {
 						ProjectAllocationDetailsDTO alloc = flat.currentAllocation();
 						if (alloc == null || alloc.projectCode() == null)
 							continue;
-
+ 
 						BigDecimal plannedHours = defaultZero(alloc.plannedUtil());
 						long daysWithEntries = Optional.ofNullable(alloc.daysWithEntries()).orElse(0L);
-
+ 
 						BigDecimal plannedUtil = dailyHours.compareTo(BigDecimal.ZERO) > 0 ? plannedHours
 								.divide(dailyHours, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
 								: BigDecimal.ZERO;
-
+ 
 						BigDecimal actualUtil = (dailyHours.compareTo(BigDecimal.ZERO) > 0 && daysWithEntries > 0)
 								? BigDecimal.valueOf(daysWithEntries)
 										.divide(dailyHours.multiply(BigDecimal.valueOf(daysWithEntries)), 4,
 												RoundingMode.HALF_UP)
 										.multiply(BigDecimal.valueOf(100))
 								: BigDecimal.ZERO;
-
+ 
 						totalBillability = totalBillability.add(defaultZero(alloc.billability()));
 						totalPlannedUtil = totalPlannedUtil.add(plannedUtil);
 						totalActualUtil = totalActualUtil.add(actualUtil);
 						allocationCount++;
-
+ 
 						ProjectAllocationDetailsDTO updatedAlloc = new ProjectAllocationDetailsDTO(alloc.projectCode(),
 								alloc.projectName(),alloc.isCustomer(), alloc.from(), alloc.to(), alloc.role(),
 								defaultZero(alloc.billability()), plannedUtil, actualUtil, daysWithEntries);
-
+ 
 						projectAllocationsDTO.add(updatedAlloc);
 					}
-
+ 
 					BigDecimal avgBillability = average(totalBillability, allocationCount);
-
-					return new ResourceAllocationsDTO(empId, first.name(), primarySkills, secondarySkills,
+ 
+					return new ResourceAllocationsDTO(empId,first.deliveryManagerId(),first.name(), primarySkills, secondarySkills,
 							first.designation(), first.experience(), projectAllocationsDTO, // ✅ always a list (can be
 																							// empty)
-							avgBillability, totalPlannedUtil, totalActualUtil);
+							avgBillability, totalPlannedUtil, totalActualUtil,first.deliveryManagerName());
 				}).toList();
 	}
 

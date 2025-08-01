@@ -38,6 +38,8 @@ public interface ProjectDetailsService {
 	List<ResourceProjectMinimalDashboardDTO> getResourceProjectMinimalDashboardData(String projectCode);
 	List<ProjectDetailsForProjectListDTO> getAllProjectsForResource();
 	
+	List<String> getProjectNamesByResourceEmpId(String empId);
+	
 	
 	
 	

@@ -327,6 +327,12 @@ public class ProjectDetailsServiceImpl implements ProjectDetailsService {
 		return projectDetailsRepository.findAllProjectsForResource(resourceId);
 	}
 
+	@Override
+	public List<String> getProjectNamesByResourceEmpId(String empId) {
+		// TODO Auto-generated method stub
+		return projectDetailsRepository.getProjectNamesByResourceEmpId(empId);
+	}
+
 
 	
 	

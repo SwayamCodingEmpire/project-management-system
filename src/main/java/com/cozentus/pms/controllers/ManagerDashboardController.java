@@ -156,5 +156,10 @@ public class ManagerDashboardController {
 		return ResponseEntity.ok(dmDashboardService.getNonUnitilizedResources());
 	}
 	
+	@GetMapping("/resource-projects")
+	public ResponseEntity<List<String>> getProjectsByResourceEmpId(@RequestParam String empId) {
+		List<String> projects = projectDetailsService.getProjectNamesByResourceEmpId(empId);
+		return ResponseEntity.ok(projects);
 	
+	}
 }

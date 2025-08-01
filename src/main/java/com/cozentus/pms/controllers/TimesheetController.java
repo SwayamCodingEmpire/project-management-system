@@ -43,7 +43,7 @@ public class TimesheetController {
 	}
 	
 	@PostMapping
-	public ResponseEntity<String> createTimesheet(@RequestBody SingularTimesheetPayload singularTimesheetPayload) {
+	public ResponseEntity<String> saveTimeSheet(@RequestBody SingularTimesheetPayload singularTimesheetPayload) {
 		String empId = authenticationService.getCurrentUserDetails().getRight().empId();
 		timesheetService.saveTimesheet(singularTimesheetPayload, empId);
 		return ResponseEntity.ok("Timesheet created successfully");
