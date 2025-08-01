@@ -18,7 +18,7 @@ import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.NameAndEmpId;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
 import com.cozentus.pms.dto.ProjectTimesheetForEmailDTO;
-import com.cozentus.pms.dto.ReportingManagerDTO;
+import com.cozentus.pms.dto.ManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
 import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceFlatDTO;
@@ -124,10 +124,11 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 
 
 
+	List<ManagerDTO> findAllByEnabledTrue();
 
 
-
-	List<ReportingManagerDTO> findAllByEnabledTrue();
+	@Query("SELECT new com.cozentus.pms.dto.ManagerDTO(u.empId, u.name, u.emailId) FROM UserInfo u WHERE u.credential.role = :role AND u.enabled = true")
+	List<ManagerDTO> findAllDeliveryManagersByEnabledTrue(Roles role);
 
 	boolean existsByEmpId(String empId);
 
@@ -140,8 +141,8 @@ public interface UserInfoRepository extends JpaRepository<UserInfo, Integer> {
 	
 	@Transactional
 	@Modifying
-	@Query("UPDATE UserInfo u SET u.role = :role, u.designation = :designation, u.expInYears = :expInYears, u.reportingManager = :reportingManager WHERE u.empId = :empId ")
-	int updateResourceByEmpId(String empId, String role, String designation, BigDecimal expInYears, UserInfo reportingManager);
+	@Query("UPDATE UserInfo u SET u.role = :role, u.designation = :designation, u.expInYears = :expInYears, u.reportingManager = :reportingManager, u.deliveryManager = :deliveryManager WHERE u.empId = :empId ")
+	int updateResourceByEmpId(String empId, String role, String designation, BigDecimal expInYears, UserInfo reportingManager,  UserInfo deliveryManager);
 	
 //	@Query("""
 //		    SELECT new com.cozentus.pms.dto.IdAndCodeDTO(u.id, u.empId)

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cozentus.pms.dto.ProjectManagerDTO;
-import com.cozentus.pms.dto.ReportingManagerDTO;
+import com.cozentus.pms.dto.ManagerDTO;
 import com.cozentus.pms.dto.ResourceDTO;
 import com.cozentus.pms.dto.ResourceEditDTO;
 import com.cozentus.pms.dto.SkillUpsertDTO;
@@ -59,8 +59,13 @@ public class UserInfoController {
 	}
 	
 	@GetMapping("/reporting-managers")
-	public ResponseEntity<List<ReportingManagerDTO>> getAllReportingManagers() {
+	public ResponseEntity<List<ManagerDTO>> getAllReportingManagers() {
 		return ResponseEntity.ok(userInfoService.getAllReportingManagers());
+	}
+	
+	@GetMapping("delivery-managers")
+	public ResponseEntity<List<ManagerDTO>> getAllDeliveryManagers() {
+		return ResponseEntity.ok(userInfoService.getAllDeliveryManagers());
 	}
 	
 	// Add more endpoints as needed for user-related operations

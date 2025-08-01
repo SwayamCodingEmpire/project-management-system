@@ -1,6 +1,6 @@
 package com.cozentus.pms.dto;
 
-public record ReportingManagerDTO(
+public record ManagerDTO(
 		String empId,
 		String name,
 		String emailId

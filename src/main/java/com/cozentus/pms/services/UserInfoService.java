@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.cozentus.pms.dto.ProjectManagerDTO;
-import com.cozentus.pms.dto.ReportingManagerDTO;
+import com.cozentus.pms.dto.ManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
 import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceDTO;
@@ -19,7 +19,7 @@ public interface UserInfoService {
 	List<ProjectManagerDTO> getAllProjectManagersWithProjects();
 	List<ProjectManagerDTO> getAllProjectResourcesWithAssociatedProjectsProjects(String dmEmpId);
 	Page<ResourceDTO> getAllResourcesWithAllocations(String search, Pageable pageable);
-	List<ReportingManagerDTO> getAllReportingManagers();
+	List<ManagerDTO> getAllReportingManagers();
 	void addResource(ResourceDTO resourceDTO);
 	void updateResource(ResourceEditDTO resourceEditDTO);
 	List<String> getAllDesignations();
@@ -29,8 +29,7 @@ public interface UserInfoService {
 	List<String> getAllSkills();
 	void deleteSkillFromResource(String empId, String skillName);
 //	Set<ResourceBasics> getAllResourceSkillLevel();
-	Set<ResourceBasics> getSkillsForDM()	;
+	Set<ResourceBasics> getSkillsForDM();
 	Set<ResourceBasics> getSkillsForPM();
-	
-
+	List<ManagerDTO> getAllDeliveryManagers();
 }

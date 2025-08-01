@@ -25,7 +25,7 @@ import com.cozentus.pms.dto.IdAndCodeDTO;
 import com.cozentus.pms.dto.ProjectAllocationDTO;
 import com.cozentus.pms.dto.ProjectManagerDTO;
 import com.cozentus.pms.dto.ProjectManagerFlatDTO;
-import com.cozentus.pms.dto.ReportingManagerDTO;
+import com.cozentus.pms.dto.ManagerDTO;
 import com.cozentus.pms.dto.ResourceBasicDTO;
 import com.cozentus.pms.dto.ResourceBasics;
 import com.cozentus.pms.dto.ResourceDTO;
@@ -206,7 +206,10 @@ public class UserInfoServiceImpl implements UserInfoService {
 				.orElseThrow(() -> new RecordNotFoundException(
 						"Reporting Manager not found with empId: " + resourceDTO.reportingManagerId()));
 		UserInfo reportingManager = entityManager.getReference(UserInfo.class, managerId);
+		Integer deliveryManagerId = authenticationService.getCurrentUserDetails().getRight().userId();
+		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, deliveryManagerId);
 		userInfo.setReportingManager(reportingManager);
+		userInfo.setDeliveryManager(deliveryManager);
 		Credential credential = new Credential();
 		credential.setUsername(resourceDTO.emailId());
 		credential.setPassword(bCryptPasswordEncoder.encode("C0Z1234")); // Set a default password or handle it as needed
@@ -220,11 +223,12 @@ public class UserInfoServiceImpl implements UserInfoService {
 	@CacheEvict(value = "reportingManagers", key = "'allReportingManagers'") })
 	public void updateResource(ResourceEditDTO resourceEditDTO) {
 		IdAndCodeDTO idAndCodeDTO = userInfoRepository.findIdAndEmpIdByEmpId(resourceEditDTO.reportingManager()).orElseThrow(() -> new RecordNotFoundException("Resource not found with empId: " + resourceEditDTO.id()));
+		IdAndCodeDTO idAndCodeDTOForDM = userInfoRepository.findIdAndEmpIdByEmpId(resourceEditDTO.deliveryManager()).orElseThrow(() -> new RecordNotFoundException("Resource not found with empId: " + resourceEditDTO.id()));
 		UserInfo userInfo = entityManager.getReference(UserInfo.class, idAndCodeDTO.id()); 
-		int updateCount = userInfoRepository.updateResourceByEmpId(resourceEditDTO.id(), resourceEditDTO.role(), resourceEditDTO.designation(), 
-				resourceEditDTO.experience(),userInfo);
+		UserInfo deliveryManager = entityManager.getReference(UserInfo.class, idAndCodeDTOForDM.id()); 
 		
-
+		int updateCount = userInfoRepository.updateResourceByEmpId(resourceEditDTO.id(), resourceEditDTO.role(), resourceEditDTO.designation(), 
+				resourceEditDTO.experience(),userInfo, deliveryManager);
 		if (updateCount == 0) {
 			throw new RecordNotFoundException("Resource not found with empId: " + resourceEditDTO.id());
 		}
@@ -232,11 +236,20 @@ public class UserInfoServiceImpl implements UserInfoService {
 
 	@Override
 	@Cacheable(value = "reportingManagers", key = "'allReportingManagers'")
-	public List<ReportingManagerDTO> getAllReportingManagers() {
+	public List<ManagerDTO> getAllReportingManagers() {
 		// TODO Auto-generated method stub
 		return userInfoRepository.findAllByEnabledTrue();
 	}
 	
+	
+
+	@Cacheable(value = "reportingManagers", key = "'allDeliveryManagers'")
+	public List<ManagerDTO> getAllDeliveryManagers() {
+		
+		log.info("Fetching all delivery managers");
+		// TODO Auto-generated method stub
+		return userInfoRepository.findAllDeliveryManagersByEnabledTrue(Roles.DELIVERY_MANAGER);
+	} 
 
 	private ConvertedSkills convertToSkillLists(List<UserSkillDetailsDTO> userSkills) {
 	    if (userSkills == null || userSkills.isEmpty()) {

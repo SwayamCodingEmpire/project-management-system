@@ -7,7 +7,8 @@ public record ResourceEditDTO(
 		    String role,
 		    String designation,
 		    BigDecimal experience,
-		    String reportingManager
+		    String reportingManager,
+		    String deliveryManager
 		) {
 
 }
